@@ -521,8 +521,10 @@ function DividendSection() {
             How the Numbers Flow.
           </h2>
           <p className="mt-4 text-muted-foreground">
-            An illustrative example based on 10 plants at full production. Real returns
-            vary with gold price, uptime and expansion.
+            A <span className="text-foreground">projection</span> based on 10 plants at full production. Actual
+            output and returns may be higher or lower depending on gold recovery
+            grades, gold spot price, plant uptime, diesel and energy costs,
+            regulatory factors and the pace of expansion.
           </p>
         </div>
 
