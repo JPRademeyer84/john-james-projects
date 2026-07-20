@@ -83,13 +83,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "John James Projects: 500,000 fractional shares at $10 each. A limited 30-day offering with a rewarding affiliate plan in USDT.",
       },
-      { property: "og:title", content: "John James Projects — Fractional Share Offering" },
+      { property: "og:title", content: "John James Projects — 30-Day Fractional Share Offering" },
       {
         property: "og:description",
-        content: "500,000 fractional shares at $10. 30 days only. USDT affiliate rewards.",
+        content: "John James Projects: 500,000 fractional shares at $10 each. A limited 30-day offering with a rewarding affiliate plan in USDT.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "John James Projects — 30-Day Fractional Share Offering" },
+      { name: "twitter:description", content: "John James Projects: 500,000 fractional shares at $10 each. A limited 30-day offering with a rewarding affiliate plan in USDT." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ffcea48a-0799-4a2e-a5a1-af616204a458/id-preview-7709de63--f2d0a1e3-fb36-45d3-b94c-84075dc8915b.lovable.app-1784530568205.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ffcea48a-0799-4a2e-a5a1-af616204a458/id-preview-7709de63--f2d0a1e3-fb36-45d3-b94c-84075dc8915b.lovable.app-1784530568205.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
