@@ -67,6 +67,8 @@ function Index() {
       <OfferingSection />
       <DividendSection />
       <ScenarioSection />
+      <ScenarioCharts />
+      <DividendCalculator />
       <AffiliateSection />
       <DisclaimerSection />
       <CTASection />
