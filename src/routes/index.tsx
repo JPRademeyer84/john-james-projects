@@ -63,8 +63,11 @@ function Index() {
     <div className="min-h-screen bg-background text-foreground font-body">
       <Header />
       <Hero />
+      <MineSection />
       <OfferingSection />
+      <DividendSection />
       <AffiliateSection />
+      <DisclaimerSection />
       <CTASection />
       <Footer />
     </div>
