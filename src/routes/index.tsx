@@ -140,11 +140,19 @@ function Hero() {
             </a>
           </div>
 
-          <div className="mt-12 grid grid-cols-3 gap-6 border-t border-border pt-8">
+          <div className="mt-10">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-gold">
+              Offering Closes In
+            </div>
+            <CountdownTimer />
+          </div>
+
+          <div className="mt-10 grid grid-cols-3 gap-6 border-t border-border pt-8">
             <Stat value="$10" label="Per Share" />
             <Stat value="500k" label="Shares Available" />
             <Stat value="30" label="Days Only" />
           </div>
+
         </div>
 
         <div className="relative">
