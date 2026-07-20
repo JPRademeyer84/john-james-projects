@@ -595,6 +595,171 @@ function DividendSection() {
   );
 }
 
+type Scenario = {
+  key: string;
+  name: string;
+  tagline: string;
+  kgPerDay: number;
+  pricePerKg: number;
+  plants: number;
+  tone: "conservative" | "base" | "optimistic";
+};
+
+const SCENARIOS: Scenario[] = [
+  {
+    key: "conservative",
+    name: "Conservative",
+    tagline: "Lower recovery, softer gold price, slower rollout",
+    kgPerDay: 0.7,
+    pricePerKg: 110_000,
+    plants: 8,
+    tone: "conservative",
+  },
+  {
+    key: "base",
+    name: "Base Case",
+    tagline: "Target model — 10 plants at design capacity",
+    kgPerDay: 1.0,
+    pricePerKg: 130_000,
+    plants: 10,
+    tone: "base",
+  },
+  {
+    key: "optimistic",
+    name: "Optimistic",
+    tagline: "Higher grade, stronger spot price, full 10-plant fleet",
+    kgPerDay: 1.2,
+    pricePerKg: 150_000,
+    plants: 10,
+    tone: "optimistic",
+  },
+];
+
+const DAYS_PER_MONTH = 22.4;
+const MONTHS = 12;
+const OPEX_RATIO = 0.5; // 50% opex / tax / refinery
+const JJ_SHARES = 100_000;
+const TOTAL_SHARES = 1_400_000;
+const FRACTIONAL_SHARES = 500_000;
+
+function computeScenario(s: Scenario) {
+  const annualKg = s.kgPerDay * DAYS_PER_MONTH * MONTHS * s.plants;
+  const grossRevenue = annualKg * s.pricePerKg;
+  const distributable = grossRevenue * (1 - OPEX_RATIO);
+  const jjDividend = distributable * (JJ_SHARES / TOTAL_SHARES);
+  const perFractional = jjDividend / FRACTIONAL_SHARES;
+  const yieldPct = (perFractional / 10) * 100; // $10 cost basis
+  return { annualKg, grossRevenue, distributable, jjDividend, perFractional, yieldPct };
+}
+
+function fmtUsd(n: number, digits = 0) {
+  return `$${n.toLocaleString(undefined, { maximumFractionDigits: digits, minimumFractionDigits: digits })}`;
+}
+
+function ScenarioSection() {
+  return (
+    <section id="scenarios" className="py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-gold">
+            Scenario Projections
+          </span>
+          <h2 className="mt-4 font-display text-4xl font-bold md:text-5xl">
+            Higher, Lower — What the Range Looks Like.
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Dividends move with gold recovered per day, the spot price of gold and how
+            many plants are online. These three scenarios show what a fractional share
+            could earn per year across a conservative, base and optimistic outlook.
+          </p>
+        </div>
+
+        <div className="mt-16 grid gap-6 md:grid-cols-3">
+          {SCENARIOS.map((s) => {
+            const r = computeScenario(s);
+            const isBase = s.tone === "base";
+            return (
+              <div
+                key={s.key}
+                className={`relative flex flex-col rounded-2xl border p-8 ${
+                  isBase
+                    ? "border-gold/50 bg-gold/5 shadow-[var(--shadow-gold)]"
+                    : "border-border bg-card"
+                }`}
+              >
+                {isBase && (
+                  <span className="absolute -top-3 left-8 rounded-full bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-background">
+                    Target
+                  </span>
+                )}
+                <div className="flex items-baseline justify-between">
+                  <h3 className="font-display text-xl font-semibold">{s.name}</h3>
+                  <span
+                    className={`text-[10px] font-semibold uppercase tracking-widest ${
+                      s.tone === "optimistic"
+                        ? "text-emerald-400"
+                        : s.tone === "conservative"
+                          ? "text-muted-foreground"
+                          : "text-gold"
+                    }`}
+                  >
+                    {s.tone}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">{s.tagline}</p>
+
+                <dl className="mt-6 space-y-2 border-t border-border/60 pt-4 text-sm">
+                  <Row label="Gold / day / plant" value={`${s.kgPerDay} kg`} />
+                  <Row label="Plants online" value={`${s.plants}`} />
+                  <Row label="Gold price / kg" value={fmtUsd(s.pricePerKg)} />
+                  <Row label="Annual output" value={`~${Math.round(r.annualKg).toLocaleString()} kg`} />
+                  <Row label="Gross revenue" value={`~${fmtUsd(r.grossRevenue)}`} />
+                  <Row
+                    label="Distributable (50%)"
+                    value={`~${fmtUsd(r.distributable)}`}
+                  />
+                </dl>
+
+                <div
+                  className={`mt-6 rounded-xl p-5 text-center ${
+                    isBase ? "bg-background/40" : "bg-surface/60"
+                  }`}
+                >
+                  <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Projected / Fractional Share / Yr
+                  </div>
+                  <div className="mt-1 font-display text-4xl font-bold text-gold tabular-nums">
+                    ~${r.perFractional.toFixed(2)}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    ≈ {r.yieldPct.toFixed(1)}% annual yield on $10 cost
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-muted-foreground">
+          All figures are projections, not guarantees. Actual results depend on gold
+          grade and recovery, spot price, plant uptime, diesel and energy costs,
+          regulatory conditions and the pace at which additional plants and mines
+          come online. Returns may be higher or lower than shown.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-display font-semibold tabular-nums text-foreground">{value}</dd>
+    </div>
+  );
+}
+
 function DisclaimerSection() {
   return (
     <section className="py-16">
