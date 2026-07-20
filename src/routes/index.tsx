@@ -793,6 +793,328 @@ function DisclaimerSection() {
 }
 
 
+// ============ Scenario Charts ============
+function ScenarioCharts() {
+  const rows = SCENARIOS.map((s) => ({ s, r: computeScenario(s) }));
+  const metrics = [
+    {
+      key: "annualKg",
+      label: "Annual Gold Output",
+      unit: "kg",
+      fmt: (v: number) => `${Math.round(v).toLocaleString()} kg`,
+    },
+    {
+      key: "grossRevenue",
+      label: "Gross Revenue",
+      unit: "USD",
+      fmt: (v: number) => fmtUsd(v),
+    },
+    {
+      key: "perFractional",
+      label: "Dividend / Fractional Share / Yr",
+      unit: "USD",
+      fmt: (v: number) => `$${v.toFixed(2)}`,
+    },
+  ] as const;
+
+  const toneColor = (t: Scenario["tone"]) =>
+    t === "optimistic"
+      ? "bg-emerald-400/80"
+      : t === "conservative"
+        ? "bg-muted-foreground/60"
+        : "bg-gold";
+
+  return (
+    <section id="charts" className="py-24 bg-surface/30">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-gold">
+            Visual Comparison
+          </span>
+          <h2 className="mt-4 font-display text-4xl font-bold md:text-5xl">
+            Scenarios Side by Side.
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            The same three outlooks — conservative, base and optimistic — plotted
+            across the metrics that matter most to a fractional shareholder.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
+          {metrics.map((m) => {
+            const values = rows.map((r) => r.r[m.key as keyof ReturnType<typeof computeScenario>] as number);
+            const max = Math.max(...values);
+            return (
+              <div key={m.key} className="rounded-2xl border border-border bg-card p-6">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {m.label}
+                </div>
+                <div className="mt-1 font-display text-sm text-foreground/80">per year</div>
+
+                <div className="mt-6 space-y-5">
+                  {rows.map(({ s, r }) => {
+                    const v = r[m.key as keyof typeof r] as number;
+                    const pct = max > 0 ? (v / max) * 100 : 0;
+                    return (
+                      <div key={s.key}>
+                        <div className="flex items-baseline justify-between text-xs">
+                          <span className="font-semibold uppercase tracking-widest text-muted-foreground">
+                            {s.name}
+                          </span>
+                          <span className="font-display text-sm font-semibold tabular-nums text-foreground">
+                            {m.fmt(v)}
+                          </span>
+                        </div>
+                        <div className="mt-2 h-3 overflow-hidden rounded-full bg-background/70 ring-1 ring-border">
+                          <div
+                            className={`h-full ${toneColor(s.tone)} transition-all duration-700`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-muted-foreground">
+          Bars are scaled to the largest value in each chart. Projections only —
+          actual outcomes depend on gold grade, recovery, spot price, uptime and
+          rollout pace.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ============ Interactive Dividend Calculator ============
+function DividendCalculator() {
+  const [kgPerDay, setKgPerDay] = useState(1.0);
+  const [pricePerKg, setPricePerKg] = useState(130_000);
+  const [daysPerMonth, setDaysPerMonth] = useState(22);
+  const [plants, setPlants] = useState(10);
+
+  const compute = (kgFactor: number, priceFactor: number) => {
+    const annualKg = kgPerDay * kgFactor * daysPerMonth * MONTHS * plants;
+    const grossRevenue = annualKg * pricePerKg * priceFactor;
+    const distributable = grossRevenue * (1 - OPEX_RATIO);
+    const jjDividend = distributable * (JJ_SHARES / TOTAL_SHARES);
+    const perFractional = jjDividend / FRACTIONAL_SHARES;
+    const yieldPct = (perFractional / 10) * 100;
+    return { annualKg, grossRevenue, distributable, perFractional, yieldPct };
+  };
+
+  const conservative = compute(0.8, 0.9);
+  const base = compute(1, 1);
+  const optimistic = compute(1.15, 1.1);
+
+  const cards = [
+    { name: "Conservative", tone: "conservative" as const, r: conservative, note: "kg × 0.80  ·  price × 0.90" },
+    { name: "Base Case", tone: "base" as const, r: base, note: "your inputs, as entered" },
+    { name: "Optimistic", tone: "optimistic" as const, r: optimistic, note: "kg × 1.15  ·  price × 1.10" },
+  ];
+
+  const toneRing = (t: "conservative" | "base" | "optimistic") =>
+    t === "optimistic"
+      ? "border-emerald-400/40 bg-emerald-400/5"
+      : t === "conservative"
+        ? "border-border bg-card"
+        : "border-gold/50 bg-gold/5 shadow-[var(--shadow-gold)]";
+
+  const toneText = (t: "conservative" | "base" | "optimistic") =>
+    t === "optimistic" ? "text-emerald-400" : t === "conservative" ? "text-muted-foreground" : "text-gold";
+
+  return (
+    <section id="calculator" className="py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-gold">
+            Interactive Model
+          </span>
+          <h2 className="mt-4 font-display text-4xl font-bold md:text-5xl">
+            Build Your Own Projection.
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            Adjust gold per day, gold price, plant uptime and number of plants.
+            The conservative, base and optimistic dividend estimates update live.
+          </p>
+        </div>
+
+        <div className="mt-14 grid gap-8 lg:grid-cols-5">
+          {/* Controls */}
+          <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-8">
+            <div className="flex items-center gap-2">
+              <Calculator className="h-5 w-5 text-gold" />
+              <h3 className="font-display text-lg font-semibold">Inputs</h3>
+            </div>
+
+            <div className="mt-6 space-y-6">
+              <Slider
+                label="Gold / day / plant"
+                value={kgPerDay}
+                min={0.3}
+                max={1.5}
+                step={0.05}
+                onChange={setKgPerDay}
+                display={`${kgPerDay.toFixed(2)} kg`}
+              />
+              <Slider
+                label="Gold price"
+                value={pricePerKg}
+                min={80_000}
+                max={180_000}
+                step={1_000}
+                onChange={setPricePerKg}
+                display={`${fmtUsd(pricePerKg)} / kg`}
+              />
+              <Slider
+                label="Operating days / month"
+                value={daysPerMonth}
+                min={10}
+                max={30}
+                step={1}
+                onChange={setDaysPerMonth}
+                display={`${daysPerMonth} days`}
+              />
+              <Slider
+                label="Plants online"
+                value={plants}
+                min={1}
+                max={15}
+                step={1}
+                onChange={setPlants}
+                display={`${plants} plant${plants === 1 ? "" : "s"}`}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setKgPerDay(1.0);
+                setPricePerKg(130_000);
+                setDaysPerMonth(22);
+                setPlants(10);
+              }}
+              className="mt-8 w-full rounded-lg border border-border bg-background/60 py-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground hover:text-gold hover:border-gold/40 transition"
+            >
+              Reset to Base Case
+            </button>
+          </div>
+
+          {/* Live results */}
+          <div className="lg:col-span-3 space-y-4">
+            {cards.map((c) => {
+              const maxPer = Math.max(conservative.perFractional, base.perFractional, optimistic.perFractional);
+              const pct = maxPer > 0 ? (c.r.perFractional / maxPer) * 100 : 0;
+              return (
+                <div key={c.name} className={`rounded-2xl border p-6 ${toneRing(c.tone)}`}>
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <div className={`text-[10px] font-semibold uppercase tracking-widest ${toneText(c.tone)}`}>
+                        {c.name}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">{c.note}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-display text-3xl font-bold text-gold tabular-nums">
+                        ${c.r.perFractional.toFixed(2)}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                        per share / yr · {c.r.yieldPct.toFixed(1)}% yield
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-background/70 ring-1 ring-border">
+                    <div
+                      className={`h-full transition-all duration-500 ${
+                        c.tone === "optimistic"
+                          ? "bg-emerald-400/80"
+                          : c.tone === "conservative"
+                            ? "bg-muted-foreground/60"
+                            : "bg-gold"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
+                    <MiniStat label="Annual kg" value={`${Math.round(c.r.annualKg).toLocaleString()}`} />
+                    <MiniStat label="Gross rev." value={fmtUsd(c.r.grossRevenue)} />
+                    <MiniStat label="Distributable" value={fmtUsd(c.r.distributable)} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-muted-foreground">
+          Illustrative model. 50% of gross revenue is reserved for operating costs,
+          tax and refinery. John James Projects holds {JJ_SHARES.toLocaleString()} of{" "}
+          {TOTAL_SHARES.toLocaleString()} total Aureus Alliance Holdings shares,
+          distributed across {FRACTIONAL_SHARES.toLocaleString()} fractional shares.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Slider({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  display,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (v: number) => void;
+  display: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <label className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {label}
+        </label>
+        <span className="font-display text-sm font-semibold tabular-nums text-gold">
+          {display}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="mt-3 w-full accent-[var(--gold)]"
+      />
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-background/50 p-3 ring-1 ring-border">
+      <div className="text-[9px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="mt-1 font-display text-sm font-semibold tabular-nums text-foreground truncate">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+
 
 function Footer() {
   return (
