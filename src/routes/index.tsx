@@ -498,17 +498,17 @@ function MineSection() {
 
 function DividendSection() {
   const rows = [
-    { label: "Gold per day (per plant)", value: "1 kg" },
+    { label: "Gold per day (per plant, projected)", value: "~1 kg" },
     { label: "Operating days per month", value: "22.4" },
     { label: "Plants at full scale", value: "10" },
-    { label: "Monthly output", value: "224 kg" },
-    { label: "Annual output (× 12)", value: "2,688 kg" },
-    { label: "Gold price (per kg)", value: "$130,000" },
-    { label: "Gross annual revenue", value: "$349,440,000" },
+    { label: "Projected monthly output", value: "~224 kg" },
+    { label: "Projected annual output (× 12)", value: "~2,688 kg" },
+    { label: "Gold price (per kg, indicative)", value: "$130,000" },
+    { label: "Projected gross annual revenue", value: "~$349,440,000" },
     { label: "Less 50% (opex, tax, refinery)", value: "−$174,720,000", muted: true },
-    { label: "Distributable profit", value: "$174,720,000", highlight: true },
+    { label: "Projected distributable profit", value: "~$174,720,000", highlight: true },
     { label: "Total shares issued", value: "1,400,000" },
-    { label: "Dividend per full share / yr", value: "$124.80", highlight: true },
+    { label: "Projected dividend per full share / yr", value: "~$124.80", highlight: true },
   ];
   return (
     <section id="dividends" className="border-y border-border bg-surface/40 py-24">
