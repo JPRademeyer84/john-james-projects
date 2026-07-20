@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Clock, Coins, TrendingUp, Users, Trophy, Flame } from "lucide-react";
+import { ArrowRight, Clock, Coins, TrendingUp, Users, Trophy, Flame, Mountain, Zap, Droplet, ShieldCheck, Factory, Calculator, Lock, Info } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -63,8 +63,11 @@ function Index() {
     <div className="min-h-screen bg-background text-foreground font-body">
       <Header />
       <Hero />
+      <MineSection />
       <OfferingSection />
+      <DividendSection />
       <AffiliateSection />
+      <DisclaimerSection />
       <CTASection />
       <Footer />
     </div>
@@ -84,7 +87,7 @@ function Header() {
           </span>
         </a>
         <nav className="hidden gap-8 md:flex">
-          {["Offering", "Affiliate", "Timeline", "Contact"].map((l) => (
+          {["Mine", "Offering", "Dividends", "Affiliate", "Contact"].map((l) => (
             <a
               key={l}
               href={`#${l.toLowerCase()}`}
@@ -433,6 +436,193 @@ function CTASection() {
     </section>
   );
 }
+
+function MineSection() {
+  const assets = [
+    { icon: Mountain, title: "Secured Land", desc: "Fully permitted mining ground in Kadoma, Zimbabwe." },
+    { icon: ShieldCheck, title: "On-Site Security", desc: "24/7 protection for staff, plant and gold recovery." },
+    { icon: Factory, title: "100 t/h Wash Plant", desc: "Operational plant capable of yielding 1kg of gold per day." },
+    { icon: Droplet, title: "5 Boreholes", desc: "Independent water supply already installed and tested." },
+    { icon: Users, title: "Trained Workforce", desc: "Full operations team on the ground and ready to run." },
+    { icon: Zap, title: "Power Needed", desc: "Capital raised funds generators & diesel for 10 hrs/day." },
+  ];
+  return (
+    <section id="mine" className="relative border-t border-border py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="grid gap-16 md:grid-cols-[1fr,1.4fr]">
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-widest text-gold">
+              The Purpose
+            </span>
+            <h2 className="mt-4 font-display text-4xl font-bold md:text-5xl">
+              Funding the Aureus Alliance
+              <span className="block text-gold">Holdings Mine — Kadoma.</span>
+            </h2>
+            <p className="mt-6 text-muted-foreground">
+              Capital raised through this offering funds the running expenses of the
+              Aureus Alliance Holdings gold mine in Kadoma, Zimbabwe. The site is fully
+              secured, staffed and equipped — the capital unlocks daily production.
+            </p>
+            <p className="mt-4 text-muted-foreground">
+              The goal: five additional plants operational by <span className="text-gold font-semibold">December 2026</span>,
+              expanding output to 10 plants running in parallel.
+            </p>
+            <div className="mt-8 rounded-2xl border border-gold/30 bg-gold/5 p-6">
+              <p className="text-sm text-muted-foreground">Established Backing</p>
+              <p className="mt-2 font-display text-xl text-foreground">
+                <span className="text-gold">John James Property Development</span> — founded 1971,
+                funding Zimbabwean mining projects since 2016.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {assets.map((a) => (
+              <div
+                key={a.title}
+                className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-gold/50 hover:bg-gold/5"
+              >
+                <div className="grid h-12 w-12 place-items-center rounded-xl bg-gold/10 ring-1 ring-gold/30">
+                  <a.icon className="h-5 w-5 text-gold" />
+                </div>
+                <h3 className="mt-5 font-display text-lg font-semibold">{a.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{a.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DividendSection() {
+  const rows = [
+    { label: "Gold per day (per plant)", value: "1 kg" },
+    { label: "Operating days per month", value: "22.4" },
+    { label: "Plants at full scale", value: "10" },
+    { label: "Monthly output", value: "224 kg" },
+    { label: "Annual output (× 12)", value: "2,688 kg" },
+    { label: "Gold price (per kg)", value: "$130,000" },
+    { label: "Gross annual revenue", value: "$349,440,000" },
+    { label: "Less 50% (opex, tax, refinery)", value: "−$174,720,000", muted: true },
+    { label: "Distributable profit", value: "$174,720,000", highlight: true },
+    { label: "Total shares issued", value: "1,400,000" },
+    { label: "Dividend per full share / yr", value: "$124.80", highlight: true },
+  ];
+  return (
+    <section id="dividends" className="border-y border-border bg-surface/40 py-24">
+      <div className="mx-auto max-w-7xl px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <span className="text-xs font-semibold uppercase tracking-widest text-gold">
+            Dividend Illustration
+          </span>
+          <h2 className="mt-4 font-display text-4xl font-bold md:text-5xl">
+            How the Numbers Flow.
+          </h2>
+          <p className="mt-4 text-muted-foreground">
+            An illustrative example based on 10 plants at full production. Real returns
+            vary with gold price, uptime and expansion.
+          </p>
+        </div>
+
+        <div className="mt-16 grid gap-8 lg:grid-cols-[1.3fr,1fr]">
+          <div className="rounded-2xl border border-border bg-card p-8">
+            <div className="flex items-center gap-3">
+              <Calculator className="h-5 w-5 text-gold" />
+              <h3 className="font-display text-xl font-semibold">Annual Production Model</h3>
+            </div>
+            <div className="mt-6 divide-y divide-border/60">
+              {rows.map((r) => (
+                <div key={r.label} className="flex items-baseline justify-between py-3">
+                  <span className="text-sm text-muted-foreground">{r.label}</span>
+                  <span
+                    className={`font-display text-lg font-semibold tabular-nums ${
+                      r.highlight ? "text-gold" : r.muted ? "text-muted-foreground" : "text-foreground"
+                    }`}
+                  >
+                    {r.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <div className="rounded-2xl border border-gold/40 bg-gold/5 p-8 shadow-[var(--shadow-gold)]">
+              <span className="text-xs font-semibold uppercase tracking-widest text-gold">
+                John James Allocation
+              </span>
+              <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                <p>
+                  100,000 shares × <span className="text-foreground font-semibold">$124.80</span> ={" "}
+                  <span className="text-foreground font-semibold">$12,480,000</span> in annual dividends.
+                </p>
+                <p>
+                  Fractionalised across 500,000 shares at $10 each:
+                </p>
+              </div>
+              <div className="mt-6 rounded-xl bg-background/40 p-6 text-center">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Per Fractional Share / Year
+                </div>
+                <div className="mt-2 font-display text-5xl font-bold text-gold tabular-nums">
+                  $24.96
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Illustrative — grows as new mines are acquired.
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <div className="flex items-center gap-3">
+                <Lock className="h-5 w-5 text-gold" />
+                <h3 className="font-display text-lg font-semibold">12-Month Lock-Up</h3>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Each share purchased is locked for 12 months. First dividend distribution
+                begins <span className="text-gold font-semibold">July 2027</span>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DisclaimerSection() {
+  return (
+    <section className="py-16">
+      <div className="mx-auto max-w-4xl px-6">
+        <div className="rounded-2xl border border-border bg-card/60 p-8">
+          <div className="flex items-start gap-4">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gold/10 ring-1 ring-gold/30">
+              <Info className="h-5 w-5 text-gold" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-foreground">
+                Important — Nature of the Shares
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                Aureus Alliance Holdings shares are <span className="text-foreground">not a security</span> and{" "}
+                <span className="text-foreground">not an investment product</span>. You are purchasing a share in
+                the holdings company and are therefore entitled to dividends drawn from the
+                profits of the operation. Ownership is generational — passing to you, your
+                children, and potentially theirs. As the company expands and acquires
+                additional mines, dividends are expected to grow beyond the illustrative
+                <span className="text-gold font-semibold"> $24.96</span> per fractional share figure shown above.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 
 function Footer() {
   return (
