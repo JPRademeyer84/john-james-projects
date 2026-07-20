@@ -87,7 +87,7 @@ function Header() {
           </span>
         </a>
         <nav className="hidden gap-8 md:flex">
-          {["Offering", "Affiliate", "Timeline", "Contact"].map((l) => (
+          {["Mine", "Offering", "Dividends", "Affiliate", "Contact"].map((l) => (
             <a
               key={l}
               href={`#${l.toLowerCase()}`}
