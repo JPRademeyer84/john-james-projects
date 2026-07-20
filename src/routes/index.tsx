@@ -1,9 +1,62 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { ArrowRight, Clock, Coins, TrendingUp, Users, Trophy, Flame } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
 });
+
+// Fixed offering end date — 30 day window
+const OFFERING_END = new Date("2026-08-18T23:59:59Z").getTime();
+
+function useCountdown(target: number) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const diff = Math.max(0, target - now);
+  const days = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff / 3600000) % 24);
+  const minutes = Math.floor((diff / 60000) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+  return { days, hours, minutes, seconds };
+}
+
+function CountdownTimer({ compact = false }: { compact?: boolean }) {
+  const { days, hours, minutes, seconds } = useCountdown(OFFERING_END);
+  const units = [
+    { label: "Days", value: days },
+    { label: "Hours", value: hours },
+    { label: "Minutes", value: minutes },
+    { label: "Seconds", value: seconds },
+  ];
+  return (
+    <div
+      className={`grid grid-cols-4 gap-2 ${
+        compact ? "max-w-md" : "max-w-xl"
+      }`}
+    >
+      {units.map((u) => (
+        <div
+          key={u.label}
+          className="rounded-xl border border-gold/30 bg-gold/5 px-3 py-4 text-center backdrop-blur"
+        >
+          <div
+            className={`font-display font-bold text-gold tabular-nums ${
+              compact ? "text-2xl" : "text-4xl md:text-5xl"
+            }`}
+          >
+            {String(u.value).padStart(2, "0")}
+          </div>
+          <div className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+            {u.label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function Index() {
   return (
@@ -87,11 +140,19 @@ function Hero() {
             </a>
           </div>
 
-          <div className="mt-12 grid grid-cols-3 gap-6 border-t border-border pt-8">
+          <div className="mt-10">
+            <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-gold">
+              Offering Closes In
+            </div>
+            <CountdownTimer />
+          </div>
+
+          <div className="mt-10 grid grid-cols-3 gap-6 border-t border-border pt-8">
             <Stat value="$10" label="Per Share" />
             <Stat value="500k" label="Shares Available" />
             <Stat value="30" label="Days Only" />
           </div>
+
         </div>
 
         <div className="relative">
@@ -350,6 +411,10 @@ function CTASection() {
         <p className="mx-auto mt-6 max-w-xl text-muted-foreground">
           Secure your fractional stake in John James Projects before the window closes.
         </p>
+        <div className="mt-10 flex justify-center">
+          <CountdownTimer />
+        </div>
+
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <a
             href="mailto:invest@johnjamesprojects.com"
