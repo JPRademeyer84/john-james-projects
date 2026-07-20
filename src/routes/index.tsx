@@ -411,6 +411,10 @@ function CTASection() {
         <p className="mx-auto mt-6 max-w-xl text-muted-foreground">
           Secure your fractional stake in John James Projects before the window closes.
         </p>
+        <div className="mt-10 flex justify-center">
+          <CountdownTimer />
+        </div>
+
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <a
             href="mailto:invest@johnjamesprojects.com"
