@@ -557,8 +557,8 @@ function DividendSection() {
               </span>
               <div className="mt-4 space-y-3 text-sm text-muted-foreground">
                 <p>
-                  100,000 shares × <span className="text-foreground font-semibold">$124.80</span> ={" "}
-                  <span className="text-foreground font-semibold">$12,480,000</span> in annual dividends.
+                  100,000 shares × <span className="text-foreground font-semibold">~$124.80</span> ≈{" "}
+                  <span className="text-foreground font-semibold">~$12,480,000</span> in projected annual dividends.
                 </p>
                 <p>
                   Fractionalised across 500,000 shares at $10 each:
@@ -566,13 +566,13 @@ function DividendSection() {
               </div>
               <div className="mt-6 rounded-xl bg-background/40 p-6 text-center">
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Per Fractional Share / Year
+                  Projected Per Fractional Share / Year
                 </div>
                 <div className="mt-2 font-display text-5xl font-bold text-gold tabular-nums">
-                  $24.96
+                  ~$24.96
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
-                  Illustrative — grows as new mines are acquired.
+                  Projection only — may be more or lower; grows as new mines are acquired.
                 </div>
               </div>
             </div>
