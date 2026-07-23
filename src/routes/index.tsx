@@ -296,7 +296,7 @@ function OfferingCard({
 }) {
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl border p-8 transition-all hover:-translate-y-1 ${
+      className={`group relative overflow-hidden rounded-2xl border p-8 hover-lift sheen ${
         highlight
           ? "border-gold/60 bg-gold/5 shadow-[var(--shadow-gold)]"
           : "border-border bg-card"
