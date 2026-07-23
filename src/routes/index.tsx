@@ -165,15 +165,15 @@ function Hero() {
 
         </div>
 
-        <div className="relative">
-          <div className="absolute inset-0 -z-10 rounded-3xl bg-gold/10 blur-3xl" />
-          <div className="rounded-3xl border border-border bg-surface/60 p-8 backdrop-blur">
+        <div className="relative reveal-up" style={{ animationDelay: "120ms" }}>
+          <div className="absolute inset-0 -z-10 rounded-3xl bg-gold/15 blur-3xl ore-drift" />
+          <div className="rounded-3xl border border-gold/20 bg-surface/70 p-8 backdrop-blur hover-lift">
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-widest text-muted-foreground">
                 Offering Snapshot
               </span>
               <span className="inline-flex items-center gap-1.5 text-xs text-gold">
-                <span className="h-2 w-2 rounded-full bg-gold animate-pulse" /> Live
+                <span className="relative h-2 w-2 rounded-full bg-gold pulse-dot" /> Live
               </span>
             </div>
 
