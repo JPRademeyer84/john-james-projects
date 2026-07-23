@@ -687,7 +687,7 @@ function ScenarioSection() {
             return (
               <div
                 key={s.key}
-                className={`relative flex flex-col rounded-2xl border p-8 ${
+                className={`relative flex flex-col rounded-2xl border p-8 hover-lift sheen ${
                   isBase
                     ? "border-gold/50 bg-gold/5 shadow-[var(--shadow-gold)]"
                     : "border-border bg-card"
