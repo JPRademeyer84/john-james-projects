@@ -40,7 +40,7 @@ function CountdownTimer({ compact = false }: { compact?: boolean }) {
       {units.map((u) => (
         <div
           key={u.label}
-          className="rounded-xl border border-gold/30 bg-gold/5 px-3 py-4 text-center backdrop-blur"
+          className="rounded-xl border border-gold/30 bg-gold/5 px-3 py-4 text-center backdrop-blur hover-lift sheen"
         >
           <div
             className={`font-display font-bold text-gold tabular-nums ${
