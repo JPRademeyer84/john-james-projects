@@ -398,7 +398,7 @@ function AffiliateCard({
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
       <div className="text-right">
-        <div className="font-display text-4xl font-bold text-gold">{percent}</div>
+        <div className="font-display text-4xl font-bold text-shimmer">{percent}</div>
         {subPercent && (
           <div className="text-xs font-semibold text-gold-soft">{subPercent} Shares</div>
         )}
