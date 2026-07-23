@@ -119,7 +119,7 @@ function Hero() {
     >
       {/* Ambient drifting ore glow */}
       <div className="pointer-events-none absolute -top-32 -right-32 h-[520px] w-[520px] rounded-full bg-gold/20 blur-[120px] ore-drift" />
-      <div className="pointer-events-none absolute -bottom-32 -left-32 h-[520px] w-[520px] rounded-full bg-[color:var(--gold-deep)]/25 blur-[120px] ore-drift" style={{ animationDelay: "-6s" }} />
+      <div className="pointer-events-none absolute -bottom-32 -left-32 h-[520px] w-[520px] rounded-full blur-[120px] ore-drift" style={{ animationDelay: "-6s", background: "color-mix(in oklab, var(--gold-deep) 35%, transparent)" }} />
 
       <div className="relative mx-auto grid max-w-7xl gap-16 px-6 py-24 md:grid-cols-2 md:py-32">
         <div className="reveal-up">
