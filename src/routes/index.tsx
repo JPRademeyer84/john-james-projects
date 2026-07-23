@@ -40,7 +40,7 @@ function CountdownTimer({ compact = false }: { compact?: boolean }) {
       {units.map((u) => (
         <div
           key={u.label}
-          className="rounded-xl border border-gold/30 bg-gold/5 px-3 py-4 text-center backdrop-blur"
+          className="rounded-xl border border-gold/30 bg-gold/5 px-3 py-4 text-center backdrop-blur hover-lift sheen"
         >
           <div
             className={`font-display font-bold text-gold tabular-nums ${
@@ -82,7 +82,7 @@ function Header() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <a href="#" className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-gold text-primary-foreground font-display font-bold">
+          <span className="grid h-9 w-9 place-items-center rounded-md bg-gold-gradient text-primary-foreground font-display font-bold shadow-[var(--shadow-gold)]">
             JJ
           </span>
           <span className="font-display text-lg font-semibold tracking-tight text-gold">
@@ -102,7 +102,7 @@ function Header() {
         </nav>
         <a
           href="#offering"
-          className="rounded-md border border-gold px-4 py-2 text-sm font-semibold text-gold transition-colors hover:bg-gold hover:text-primary-foreground"
+          className="rounded-md border border-gold px-4 py-2 text-sm font-semibold text-gold transition-all hover:bg-gold-gradient hover:text-primary-foreground hover:border-transparent sheen"
         >
           Invest Now
         </a>
@@ -114,17 +114,21 @@ function Header() {
 function Hero() {
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative overflow-hidden ore-grain"
       style={{ backgroundImage: "var(--gradient-hero)" }}
     >
-      <div className="mx-auto grid max-w-7xl gap-16 px-6 py-24 md:grid-cols-2 md:py-32">
-        <div>
+      {/* Ambient drifting ore glow */}
+      <div className="pointer-events-none absolute -top-32 -right-32 h-[520px] w-[520px] rounded-full bg-gold/20 blur-[120px] ore-drift" />
+      <div className="pointer-events-none absolute -bottom-32 -left-32 h-[520px] w-[520px] rounded-full blur-[120px] ore-drift" style={{ animationDelay: "-6s", background: "color-mix(in oklab, var(--gold-deep) 35%, transparent)" }} />
+
+      <div className="relative mx-auto grid max-w-7xl gap-16 px-6 py-24 md:grid-cols-2 md:py-32">
+        <div className="reveal-up">
           <span className="inline-flex items-center gap-2 rounded-full bg-gold/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-gold ring-1 ring-gold/30">
-            <Flame className="h-3.5 w-3.5" /> 30 Days Only
+            <Flame className="h-3.5 w-3.5 animate-pulse" /> 30 Days Only
           </span>
           <h1 className="mt-6 font-display text-5xl font-bold leading-[1.05] md:text-7xl">
             Own a Piece of
-            <span className="block text-gold">John James Projects.</span>
+            <span className="block text-shimmer">John James Projects.</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg text-muted-foreground">
             A limited fractional share offering — 500,000 shares at just{" "}
@@ -134,13 +138,13 @@ function Hero() {
           <div className="mt-8 flex flex-wrap gap-4">
             <a
               href="#offering"
-              className="inline-flex items-center gap-2 rounded-md bg-gold px-6 py-3 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 rounded-md bg-gold-gradient px-6 py-3 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5 glow-gold sheen"
             >
               Reserve Your Shares <ArrowRight className="h-4 w-4" />
             </a>
             <a
               href="#affiliate"
-              className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-6 py-3 font-semibold text-gold transition-colors hover:bg-gold/10"
+              className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-6 py-3 font-semibold text-gold transition-colors hover:bg-gold/10 sheen"
             >
               Affiliate Plan
             </a>
@@ -161,15 +165,15 @@ function Hero() {
 
         </div>
 
-        <div className="relative">
-          <div className="absolute inset-0 -z-10 rounded-3xl bg-gold/10 blur-3xl" />
-          <div className="rounded-3xl border border-border bg-surface/60 p-8 backdrop-blur">
+        <div className="relative reveal-up" style={{ animationDelay: "120ms" }}>
+          <div className="absolute inset-0 -z-10 rounded-3xl bg-gold/15 blur-3xl ore-drift" />
+          <div className="rounded-3xl border border-gold/20 bg-surface/70 p-8 backdrop-blur hover-lift">
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-widest text-muted-foreground">
                 Offering Snapshot
               </span>
               <span className="inline-flex items-center gap-1.5 text-xs text-gold">
-                <span className="h-2 w-2 rounded-full bg-gold animate-pulse" /> Live
+                <span className="relative h-2 w-2 rounded-full bg-gold pulse-dot" /> Live
               </span>
             </div>
 
@@ -292,7 +296,7 @@ function OfferingCard({
 }) {
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl border p-8 transition-all hover:-translate-y-1 ${
+      className={`group relative overflow-hidden rounded-2xl border p-8 hover-lift sheen ${
         highlight
           ? "border-gold/60 bg-gold/5 shadow-[var(--shadow-gold)]"
           : "border-border bg-card"
@@ -382,9 +386,9 @@ function AffiliateCard({
   description: string;
 }) {
   return (
-    <div className="group flex items-center gap-6 rounded-2xl border border-border bg-card p-6 transition-all hover:border-gold/50 hover:bg-gold/5">
-      <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-gold/10 ring-1 ring-gold/30">
-        <Icon className="h-6 w-6 text-gold" />
+    <div className="group relative flex items-center gap-6 overflow-hidden rounded-2xl border border-border bg-card p-6 hover-lift sheen hover:border-gold/50 hover:bg-gold/5">
+      <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-gold-gradient text-primary-foreground shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110">
+        <Icon className="h-6 w-6" />
       </div>
       <div className="flex-1">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -394,7 +398,7 @@ function AffiliateCard({
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
       <div className="text-right">
-        <div className="font-display text-4xl font-bold text-gold">{percent}</div>
+        <div className="font-display text-4xl font-bold text-shimmer">{percent}</div>
         {subPercent && (
           <div className="text-xs font-semibold text-gold-soft">{subPercent} Shares</div>
         )}
@@ -424,13 +428,13 @@ function CTASection() {
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <a
             href="mailto:invest@johnjamesprojects.com"
-            className="inline-flex items-center gap-2 rounded-md bg-gold px-8 py-4 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 rounded-md bg-gold-gradient px-8 py-4 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5 glow-gold sheen"
           >
             Reserve Shares <ArrowRight className="h-4 w-4" />
           </a>
           <a
             href="mailto:affiliate@johnjamesprojects.com"
-            className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-8 py-4 font-semibold text-gold transition-colors hover:bg-gold/10"
+            className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-8 py-4 font-semibold text-gold transition-colors hover:bg-gold/10 sheen"
           >
             Join Affiliate Program
           </a>
@@ -483,10 +487,10 @@ function MineSection() {
             {assets.map((a) => (
               <div
                 key={a.title}
-                className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-gold/50 hover:bg-gold/5"
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 hover-lift sheen hover:border-gold/50 hover:bg-gold/5"
               >
-                <div className="grid h-12 w-12 place-items-center rounded-xl bg-gold/10 ring-1 ring-gold/30">
-                  <a.icon className="h-5 w-5 text-gold" />
+                <div className="grid h-12 w-12 place-items-center rounded-xl bg-gold-gradient text-primary-foreground shadow-[var(--shadow-gold)] transition-transform group-hover:rotate-6 group-hover:scale-110">
+                  <a.icon className="h-5 w-5" />
                 </div>
                 <h3 className="mt-5 font-display text-lg font-semibold">{a.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{a.desc}</p>
@@ -571,7 +575,7 @@ function DividendSection() {
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
                   Projected Per Fractional Share / Year
                 </div>
-                <div className="mt-2 font-display text-5xl font-bold text-gold tabular-nums">
+                <div className="mt-2 font-display text-5xl font-bold text-shimmer tabular-nums">
                   ~$24.96
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
@@ -683,7 +687,7 @@ function ScenarioSection() {
             return (
               <div
                 key={s.key}
-                className={`relative flex flex-col rounded-2xl border p-8 ${
+                className={`relative flex flex-col rounded-2xl border p-8 hover-lift sheen ${
                   isBase
                     ? "border-gold/50 bg-gold/5 shadow-[var(--shadow-gold)]"
                     : "border-border bg-card"
