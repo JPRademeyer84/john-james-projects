@@ -575,7 +575,7 @@ function DividendSection() {
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
                   Projected Per Fractional Share / Year
                 </div>
-                <div className="mt-2 font-display text-5xl font-bold text-gold tabular-nums">
+                <div className="mt-2 font-display text-5xl font-bold text-shimmer tabular-nums">
                   ~$24.96
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
