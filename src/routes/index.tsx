@@ -428,13 +428,13 @@ function CTASection() {
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <a
             href="mailto:invest@johnjamesprojects.com"
-            className="inline-flex items-center gap-2 rounded-md bg-gold px-8 py-4 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 rounded-md bg-gold-gradient px-8 py-4 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5 glow-gold sheen"
           >
             Reserve Shares <ArrowRight className="h-4 w-4" />
           </a>
           <a
             href="mailto:affiliate@johnjamesprojects.com"
-            className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-8 py-4 font-semibold text-gold transition-colors hover:bg-gold/10"
+            className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-8 py-4 font-semibold text-gold transition-colors hover:bg-gold/10 sheen"
           >
             Join Affiliate Program
           </a>
