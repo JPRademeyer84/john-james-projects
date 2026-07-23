@@ -487,10 +487,10 @@ function MineSection() {
             {assets.map((a) => (
               <div
                 key={a.title}
-                className="group rounded-2xl border border-border bg-card p-6 transition-all hover:border-gold/50 hover:bg-gold/5"
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 hover-lift sheen hover:border-gold/50 hover:bg-gold/5"
               >
-                <div className="grid h-12 w-12 place-items-center rounded-xl bg-gold/10 ring-1 ring-gold/30">
-                  <a.icon className="h-5 w-5 text-gold" />
+                <div className="grid h-12 w-12 place-items-center rounded-xl bg-gold-gradient text-primary-foreground shadow-[var(--shadow-gold)] transition-transform group-hover:rotate-6 group-hover:scale-110">
+                  <a.icon className="h-5 w-5" />
                 </div>
                 <h3 className="mt-5 font-display text-lg font-semibold">{a.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{a.desc}</p>
