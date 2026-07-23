@@ -386,9 +386,9 @@ function AffiliateCard({
   description: string;
 }) {
   return (
-    <div className="group flex items-center gap-6 rounded-2xl border border-border bg-card p-6 transition-all hover:border-gold/50 hover:bg-gold/5">
-      <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-gold/10 ring-1 ring-gold/30">
-        <Icon className="h-6 w-6 text-gold" />
+    <div className="group relative flex items-center gap-6 overflow-hidden rounded-2xl border border-border bg-card p-6 hover-lift sheen hover:border-gold/50 hover:bg-gold/5">
+      <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-gold-gradient text-primary-foreground shadow-[var(--shadow-gold)] transition-transform group-hover:scale-110">
+        <Icon className="h-6 w-6" />
       </div>
       <div className="flex-1">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
