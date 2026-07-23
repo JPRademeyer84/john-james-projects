@@ -102,7 +102,7 @@ function Header() {
         </nav>
         <a
           href="#offering"
-          className="rounded-md border border-gold px-4 py-2 text-sm font-semibold text-gold transition-colors hover:bg-gold hover:text-primary-foreground"
+          className="rounded-md border border-gold px-4 py-2 text-sm font-semibold text-gold transition-all hover:bg-gold-gradient hover:text-primary-foreground hover:border-transparent sheen"
         >
           Invest Now
         </a>
