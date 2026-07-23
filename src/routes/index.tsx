@@ -114,17 +114,21 @@ function Header() {
 function Hero() {
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative overflow-hidden ore-grain"
       style={{ backgroundImage: "var(--gradient-hero)" }}
     >
-      <div className="mx-auto grid max-w-7xl gap-16 px-6 py-24 md:grid-cols-2 md:py-32">
-        <div>
+      {/* Ambient drifting ore glow */}
+      <div className="pointer-events-none absolute -top-32 -right-32 h-[520px] w-[520px] rounded-full bg-gold/20 blur-[120px] ore-drift" />
+      <div className="pointer-events-none absolute -bottom-32 -left-32 h-[520px] w-[520px] rounded-full bg-[color:var(--gold-deep)]/25 blur-[120px] ore-drift" style={{ animationDelay: "-6s" }} />
+
+      <div className="relative mx-auto grid max-w-7xl gap-16 px-6 py-24 md:grid-cols-2 md:py-32">
+        <div className="reveal-up">
           <span className="inline-flex items-center gap-2 rounded-full bg-gold/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-gold ring-1 ring-gold/30">
-            <Flame className="h-3.5 w-3.5" /> 30 Days Only
+            <Flame className="h-3.5 w-3.5 animate-pulse" /> 30 Days Only
           </span>
           <h1 className="mt-6 font-display text-5xl font-bold leading-[1.05] md:text-7xl">
             Own a Piece of
-            <span className="block text-gold">John James Projects.</span>
+            <span className="block text-shimmer">John James Projects.</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg text-muted-foreground">
             A limited fractional share offering — 500,000 shares at just{" "}
@@ -134,13 +138,13 @@ function Hero() {
           <div className="mt-8 flex flex-wrap gap-4">
             <a
               href="#offering"
-              className="inline-flex items-center gap-2 rounded-md bg-gold px-6 py-3 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5"
+              className="inline-flex items-center gap-2 rounded-md bg-gold-gradient px-6 py-3 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5 glow-gold sheen"
             >
               Reserve Your Shares <ArrowRight className="h-4 w-4" />
             </a>
             <a
               href="#affiliate"
-              className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-6 py-3 font-semibold text-gold transition-colors hover:bg-gold/10"
+              className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-6 py-3 font-semibold text-gold transition-colors hover:bg-gold/10 sheen"
             >
               Affiliate Plan
             </a>
