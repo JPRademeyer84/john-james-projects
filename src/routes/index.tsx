@@ -82,7 +82,7 @@ function Header() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <a href="#" className="flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-gold text-primary-foreground font-display font-bold">
+          <span className="grid h-9 w-9 place-items-center rounded-md bg-gold-gradient text-primary-foreground font-display font-bold shadow-[var(--shadow-gold)]">
             JJ
           </span>
           <span className="font-display text-lg font-semibold tracking-tight text-gold">
