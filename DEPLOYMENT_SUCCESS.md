@@ -1,6 +1,6 @@
-# DEPLOYMENT COMPLETE - PREVIEW URL READY
+# DEPLOYMENT STATUS - ACTION REQUIRED
 
-## Deployment Status: BUILDING
+## Programmatic Deployment Result: BUILD ERROR
 
 The John James Projects frontend has been successfully deployed to Vercel!
 
