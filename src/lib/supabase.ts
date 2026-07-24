@@ -12,11 +12,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const PROJECT_ID = 2; // John James Projects
 
 export interface User {
-  id: string;
+  id: number;
+  auth_user_id: string;
   email: string;
   username: string;
-  referral_code: string;
-  sponsor_id: string | null;
   created_at: string;
 }
 
@@ -73,27 +72,28 @@ export const auth = {
     if (authError) throw authError;
     if (!authData.user) throw new Error('User creation failed');
 
-    let sponsorId = null;
-    if (sponsorCode) {
-      const { data: sponsor } = await supabase
-        .from('users')
-        .select('id')
-        .eq('referral_code', sponsorCode)
-        .single();
-      sponsorId = sponsor?.id;
-    }
-
+    // Insert into users table with auth_user_id (not id)
     const { error: userError } = await supabase.from('users').insert({
-      id: authData.user.id,
+      auth_user_id: authData.user.id,
       email,
       username,
-      sponsor_id: sponsorId,
-      referral_code: await generateReferralCode(),
+      is_active: true,
+      is_verified: false,
+      account_status: 'active',
     });
 
     if (userError) throw userError;
 
-    await enrollUserInProjects(authData.user.id);
+    // Get the created user's integer ID
+    const { data: userData } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', authData.user.id)
+      .single();
+
+    if (userData) {
+      await enrollUserInProjects(userData.id);
+    }
 
     return authData;
   },
@@ -109,17 +109,26 @@ export const auth = {
   },
 };
 
-async function ensureUserEnrolled(userId: string) {
+async function ensureUserEnrolled(authUserId: string) {
+  // Get user's integer ID from auth_user_id
+  const { data: userData } = await supabase
+    .from('users')
+    .select('id')
+    .eq('auth_user_id', authUserId)
+    .single();
+
+  if (!userData) return;
+
   const { data: enrollment } = await supabase
     .from('user_projects')
     .select('*')
-    .eq('user_id', userId)
+    .eq('user_id', userData.id)
     .eq('project_id', PROJECT_ID)
     .maybeSingle();
 
   if (!enrollment) {
     await supabase.from('user_projects').insert({
-      user_id: userId,
+      user_id: userData.id,
       project_id: PROJECT_ID,
       status: 'active',
       enrollment_source: 'auto',
@@ -129,41 +138,19 @@ async function ensureUserEnrolled(userId: string) {
   await supabase
     .from('user_projects')
     .update({ last_accessed_at: new Date().toISOString() })
-    .eq('user_id', userId)
+    .eq('user_id', userData.id)
     .eq('project_id', PROJECT_ID);
 }
 
-async function enrollUserInProjects(userId: string) {
-  await supabase.from('user_projects').insert([
-    {
-      user_id: userId,
-      project_id: 1,
-      status: 'active',
-      enrollment_source: 'auto',
-    },
-    {
-      user_id: userId,
-      project_id: PROJECT_ID,
-      status: 'active',
-      enrollment_source: 'auto',
-    },
-  ]);
+async function enrollUserInProjects(userId: number) {
+  // Only enroll in John James project (project_id = 2)
+  // Don't auto-enroll in Aureus (project_id = 1)
+  await supabase.from('user_projects').insert({
+    user_id: userId,
+    project_id: PROJECT_ID,
+    status: 'active',
+    enrollment_source: 'auto',
+  });
 }
 
-async function generateReferralCode(): Promise<string> {
-  const prefix = 'JJ';
-  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const code = `${prefix}${randomPart}`;
 
-  const { data: existing } = await supabase
-    .from('users')
-    .select('id')
-    .eq('referral_code', code)
-    .maybeSingle();
-
-  if (existing) {
-    return generateReferralCode();
-  }
-
-  return code;
-}

@@ -48,18 +48,25 @@ function DashboardPage() {
         return;
       }
 
-      // Fetch user data
-      const { data: userData } = await supabase
+      // Get user's integer ID from auth UUID
+      const { data: userIdData } = await supabase
         .from('users')
-        .select('username, email, referral_code')
-        .eq('id', user.id)
+        .select('id, username, email')
+        .eq('auth_user_id', user.id)
         .single();
+
+      if (!userIdData) {
+        navigate({ to: "/auth/login" });
+        return;
+      }
+
+      const userId = userIdData.id;
 
       // Get investments for project_id = 2 only
       const { data: investments } = await supabase
         .from('investments')
         .select('amount, shares, status')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('project_id', PROJECT_ID);
 
       const totalShares = investments?.reduce((sum, inv) => sum + (inv.status === 'approved' ? inv.shares : 0), 0) || 0;
@@ -69,23 +76,17 @@ function DashboardPage() {
       const { data: commissions } = await supabase
         .from('commissions')
         .select('amount, status')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .eq('project_id', PROJECT_ID);
 
       const totalEarned = commissions?.reduce((sum, comm) => sum + comm.amount, 0) || 0;
       const pending = commissions?.filter(c => c.status === 'pending').reduce((sum, comm) => sum + comm.amount, 0) || 0;
 
-      // Get referral count
-      const { count: directReferrals } = await supabase
-        .from('users')
-        .select('id', { count: 'exact', head: true })
-        .eq('sponsor_id', user.id);
-
       setData({
         user: {
-          username: userData?.username || 'User',
-          email: userData?.email || '',
-          referral_code: userData?.referral_code || '',
+          username: userIdData.username || 'User',
+          email: userIdData.email || '',
+          referral_code: '', // No referral system yet
         },
         portfolio: {
           total_shares: totalShares,
@@ -98,8 +99,8 @@ function DashboardPage() {
           withdrawn: totalEarned - pending,
         },
         referrals: {
-          direct: directReferrals || 0,
-          total_team: directReferrals || 0,
+          direct: 0,
+          total_team: 0,
         },
       });
     } catch (error) {
