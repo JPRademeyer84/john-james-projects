@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy, Users, TrendingUp, DollarSign, ArrowLeft, CheckCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { supabase, PROJECT_ID } from "../../lib/supabase";
 
 export const Route = createFileRoute("/affiliate/")({
   component: AffiliatePage,
@@ -31,6 +32,7 @@ interface AffiliateData {
 }
 
 function AffiliatePage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<AffiliateData | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -41,15 +43,54 @@ function AffiliatePage() {
 
   const fetchAffiliateData = async () => {
     try {
-      const response = await fetch("/api/affiliate/dashboard", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        navigate({ to: "/auth/login" });
+        return;
+      }
+
+      // Get user's integer ID
+      const { data: userIdData } = await supabase
+        .from('users')
+        .select('id, username, email')
+        .eq('auth_user_id', user.id)
+        .single();
+
+      if (!userIdData) {
+        navigate({ to: "/auth/login" });
+        return;
+      }
+
+      const userId = userIdData.id;
+
+      // Get commissions for project_id = 2
+      const { data: commissions } = await supabase
+        .from('commissions')
+        .select('amount, shares_bonus, type, status, created_at')
+        .eq('user_id', userId)
+        .eq('project_id', PROJECT_ID)
+        .order('created_at', { ascending: false });
+
+      const totalEarned = commissions?.reduce((sum, c) => sum + c.amount, 0) || 0;
+      const pending = commissions?.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0) || 0;
+
+      // For now, no referral system (referral_code doesn't exist)
+      setData({
+        referral_code: 'N/A',
+        referral_link: `https://john-james-projects.vercel.app/auth/register`,
+        stats: {
+          direct_referrals: 0,
+          total_team: 0,
+          total_earned: totalEarned,
+          pending_commissions: pending,
         },
+        recent_referrals: [],
+        commissions: commissions || [],
       });
-      const result = await response.json();
-      setData(result);
     } catch (error) {
-      console.error("Failed to fetch affiliate data");
+      console.error("Failed to fetch affiliate data", error);
     } finally {
       setLoading(false);
     }

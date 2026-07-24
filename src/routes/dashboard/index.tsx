@@ -38,6 +38,12 @@ function DashboardPage() {
     fetchDashboardData();
   }, []);
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("auth_token");
+    navigate({ to: "/" });
+  };
+
   const fetchDashboardData = async () => {
     try {
       // Get current user
@@ -142,7 +148,7 @@ function DashboardPage() {
             <a href="/dashboard" className="text-sm font-medium text-gold">Dashboard</a>
             <a href="/dashboard/invest" className="text-sm text-muted-foreground hover:text-foreground">Invest</a>
             <a href="/affiliate" className="text-sm text-muted-foreground hover:text-foreground">Affiliate</a>
-            <button className="text-sm text-muted-foreground hover:text-foreground">Sign Out</button>
+            <button onClick={handleSignOut} className="text-sm text-muted-foreground hover:text-foreground">Sign Out</button>
           </div>
         </div>
       </nav>
