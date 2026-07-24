@@ -101,10 +101,10 @@ function Header() {
           ))}
         </nav>
         <a
-          href="#offering"
+          href="/auth/login"
           className="rounded-md border border-gold px-4 py-2 text-sm font-semibold text-gold transition-all hover:bg-gold-gradient hover:text-primary-foreground hover:border-transparent sheen"
         >
-          Invest Now
+          Sign In
         </a>
       </div>
     </header>
@@ -132,21 +132,21 @@ function Hero() {
           </h1>
           <p className="mt-6 max-w-lg text-lg text-muted-foreground">
             A limited fractional share offering — 500,000 shares at just{" "}
-            <span className="text-foreground font-semibold">$10 each</span>. Backed by a
+            <span className="text-foreground font-semibold">R180 each</span>. Backed by a
             rewarding USDT affiliate program.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <a
-              href="#offering"
+              href="/auth/register"
               className="inline-flex items-center gap-2 rounded-md bg-gold-gradient px-6 py-3 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5 glow-gold sheen"
             >
-              Reserve Your Shares <ArrowRight className="h-4 w-4" />
+              Get Started <ArrowRight className="h-4 w-4" />
             </a>
             <a
-              href="#affiliate"
+              href="/auth/login"
               className="inline-flex items-center gap-2 rounded-md border border-gold/50 px-6 py-3 font-semibold text-gold transition-colors hover:bg-gold/10 sheen"
             >
-              Affiliate Plan
+              Sign In
             </a>
           </div>
 
@@ -158,7 +158,7 @@ function Hero() {
           </div>
 
           <div className="mt-10 grid grid-cols-3 gap-6 border-t border-border pt-8">
-            <Stat value="$10" label="Per Share" />
+            <Stat value="R180" label="Per Share" />
             <Stat value="500k" label="Shares Available" />
             <Stat value="30" label="Days Only" />
           </div>
@@ -178,16 +178,16 @@ function Hero() {
             </div>
 
             <div className="mt-8 space-y-6">
-              <SnapshotRow label="Total Raise" value="$5,000,000" />
-              <SnapshotRow label="Cost Price" value="$50 / share" muted />
-              <SnapshotRow label="Selling Price" value="$10 / share" highlight />
+              <SnapshotRow label="Total Raise" value="R90,000,000" />
+              <SnapshotRow label="Cost Price" value="R900 / share" muted />
+              <SnapshotRow label="Selling Price" value="R180 / share" highlight />
               <SnapshotRow label="Fractional Shares" value="500,000" />
               <SnapshotRow label="Window" value="30 Days" />
             </div>
 
             <div className="mt-8 rounded-xl bg-gold/10 p-5 ring-1 ring-gold/20">
               <p className="text-sm text-gold">
-                5× fractional split — a $50 share made accessible at $10 through
+                5× fractional split — a R900 share made accessible at R180 through
                 fractional ownership.
               </p>
             </div>

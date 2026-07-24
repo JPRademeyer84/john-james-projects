@@ -102,20 +102,20 @@ function DashboardPage() {
             icon={Coins}
             label="Total Shares"
             value={data.portfolio.total_shares.toLocaleString()}
-            subtext={`$${data.portfolio.total_invested.toLocaleString()} invested`}
+            subtext={`R${data.portfolio.total_invested.toLocaleString()} invested`}
           />
           <StatCard
             icon={TrendingUp}
             label="Portfolio Value"
-            value={`$${data.portfolio.current_value.toLocaleString()}`}
+            value={`R${data.portfolio.current_value.toLocaleString()}`}
             subtext="Current valuation"
             trend="+12.5%"
           />
           <StatCard
             icon={Coins}
             label="Total Commissions"
-            value={`$${data.commissions.total_earned.toLocaleString()}`}
-            subtext={`$${data.commissions.pending.toLocaleString()} pending`}
+            value={`R${data.commissions.total_earned.toLocaleString()}`}
+            subtext={`R${data.commissions.pending.toLocaleString()} pending`}
           />
           <StatCard
             icon={Users}
@@ -135,11 +135,11 @@ function DashboardPage() {
               </div>
               <div className="flex items-center justify-between border-b border-border/50 pb-3">
                 <span className="text-sm text-muted-foreground">Total Invested</span>
-                <span className="font-display text-lg font-semibold">${data.portfolio.total_invested.toLocaleString()}</span>
+                <span className="font-display text-lg font-semibold">R{data.portfolio.total_invested.toLocaleString()}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Current Value</span>
-                <span className="font-display text-lg font-semibold text-gold">${data.portfolio.current_value.toLocaleString()}</span>
+                <span className="font-display text-lg font-semibold text-gold">R{data.portfolio.current_value.toLocaleString()}</span>
               </div>
             </div>
             <a
