@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { TrendingUp, Users, Coins, ArrowRight } from "lucide-react";
+import { supabase, PROJECT_ID } from "../../lib/supabase";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardPage,
@@ -29,6 +30,7 @@ interface DashboardData {
 }
 
 function DashboardPage() {
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,15 +40,70 @@ function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch("/api/dashboard", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
+      // Get current user
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        navigate({ to: "/auth/login" });
+        return;
+      }
+
+      // Fetch user data
+      const { data: userData } = await supabase
+        .from('users')
+        .select('username, email, referral_code')
+        .eq('id', user.id)
+        .single();
+
+      // Get investments for project_id = 2 only
+      const { data: investments } = await supabase
+        .from('investments')
+        .select('amount, shares, status')
+        .eq('user_id', user.id)
+        .eq('project_id', PROJECT_ID);
+
+      const totalShares = investments?.reduce((sum, inv) => sum + (inv.status === 'approved' ? inv.shares : 0), 0) || 0;
+      const totalInvested = investments?.reduce((sum, inv) => sum + (inv.status === 'approved' ? inv.amount : 0), 0) || 0;
+
+      // Get commissions for project_id = 2 only
+      const { data: commissions } = await supabase
+        .from('commissions')
+        .select('amount, status')
+        .eq('user_id', user.id)
+        .eq('project_id', PROJECT_ID);
+
+      const totalEarned = commissions?.reduce((sum, comm) => sum + comm.amount, 0) || 0;
+      const pending = commissions?.filter(c => c.status === 'pending').reduce((sum, comm) => sum + comm.amount, 0) || 0;
+
+      // Get referral count
+      const { count: directReferrals } = await supabase
+        .from('users')
+        .select('id', { count: 'exact', head: true })
+        .eq('sponsor_id', user.id);
+
+      setData({
+        user: {
+          username: userData?.username || 'User',
+          email: userData?.email || '',
+          referral_code: userData?.referral_code || '',
+        },
+        portfolio: {
+          total_shares: totalShares,
+          total_invested: totalInvested,
+          current_value: totalInvested * 1.125,
+        },
+        commissions: {
+          total_earned: totalEarned,
+          pending: pending,
+          withdrawn: totalEarned - pending,
+        },
+        referrals: {
+          direct: directReferrals || 0,
+          total_team: directReferrals || 0,
         },
       });
-      const result = await response.json();
-      setData(result);
     } catch (error) {
-      console.error("Failed to fetch dashboard data");
+      console.error("Failed to fetch dashboard data", error);
     } finally {
       setLoading(false);
     }
