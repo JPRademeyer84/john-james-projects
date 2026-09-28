@@ -1,4 +1,5 @@
-import { aureusRead, ubuntu } from "./supabase"
+import { aureusRead } from "./supabase"
+import { ubuntu } from "./ubuntuDb"
 
 export type AureusMemberProfile = {
   id: number
