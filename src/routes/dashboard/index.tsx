@@ -61,12 +61,12 @@ function DashboardPage() {
       }
 
       if (current.identitySource === "aureus") {
-        const profile = await loadAureusMemberByAuthId(current.user.id);
+        const profile = current.profile || await loadAureusMemberByAuthId(current.user.id);
         if (!profile) {
           navigate({ to: "/auth/login" });
           return;
         }
-        const ledger = await loadAureusMemberDashboard(profile);
+        const ledger = current.ledger || await loadAureusMemberDashboard(profile);
         setData({
           identitySource: "aureus",
           isAdmin: isAureusAdmin(profile),

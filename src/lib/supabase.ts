@@ -51,16 +51,29 @@ export interface Commission {
 
 export const auth = {
   async signIn(email: string, password: string) {
-    if (aureusRead) {
-      const aureusAttempt = await aureusRead.auth.signInWithPassword({ email, password })
-      if (!aureusAttempt.error && aureusAttempt.data.session) {
-        return { ...aureusAttempt.data, identitySource: "aureus" as const }
+    const aureusRes = await fetch("/api/ua-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    })
+    const aureusJson = await aureusRes.json().catch(() => null)
+    if (aureusJson?.ok && aureusJson.token) {
+      localStorage.setItem("ua_session", aureusJson.token)
+      return {
+        session: { access_token: aureusJson.token },
+        user: aureusJson.user,
+        identitySource: "aureus" as const,
       }
+    }
+    if (aureusJson?.challengeRequired) {
+      throw new Error(aureusJson.message || "Additional Aureus verification is required")
     }
 
     requireUbuntu()
     const { data, error } = await ubuntu.auth.signInWithPassword({ email, password })
-    if (error) throw error
+    if (error) {
+      throw new Error(aureusJson?.error || error.message || "Invalid credentials")
+    }
     return { ...data, identitySource: "ubuntu" as const }
   },
 
@@ -84,6 +97,8 @@ export const auth = {
   },
 
   async signOut() {
+    localStorage.removeItem("ua_session")
+    localStorage.removeItem("auth_token")
     if (aureusRead) {
       await aureusRead.auth.signOut()
     }
@@ -91,10 +106,28 @@ export const auth = {
     if (error) throw error
   },
 
-  async getCurrentUser() {
-    if (aureusRead) {
-      const { data } = await aureusRead.auth.getUser()
-      if (data.user) return { user: data.user, identitySource: "aureus" as const }
+  async getCurrentUser(): Promise<{
+    user: { id?: string; email?: string } | null
+    identitySource: "aureus" | "ubuntu"
+    profile?: any
+    ledger?: any
+  }> {
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("ua_session") : null
+    if (token) {
+      const res = await fetch("/api/ua-me", { headers: { Authorization: `Bearer ${token}` } })
+      if (res.ok) {
+        const json = await res.json()
+        return {
+          user: {
+            id: json.profile?.auth_user_id || String(json.profile?.id || ""),
+            email: json.profile?.email,
+          },
+          identitySource: "aureus" as const,
+          profile: json.profile,
+          ledger: json.ledger,
+        }
+      }
+      localStorage.removeItem("ua_session")
     }
     const { data } = await ubuntu.auth.getUser()
     return { user: data.user, identitySource: "ubuntu" as const }

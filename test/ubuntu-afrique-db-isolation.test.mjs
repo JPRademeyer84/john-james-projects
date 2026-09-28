@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs"
 const supabase = readFileSync(new URL("../src/lib/supabase.ts", import.meta.url), "utf8")
 assert.match(supabase, /ubuntu\.from\(["']ua_users["']\)\.insert/, "signup writes Ubuntu ua_users only")
 assert.match(supabase, /pending_aureus_provision:\s*true/, "new Ubuntu users are queued for Aureus identity, not written live")
-assert.match(supabase, /aureusRead\.auth\.signInWithPassword/, "existing Aureus users sign in without Ubuntu registration")
+assert.match(supabase, /\/api\/ua-login/, "Aureus users sign in through official Aureus initiate-login, not Supabase Auth")
+assert.doesNotMatch(supabase, /aureusRead\.auth\.signInWithPassword/, "client no longer uses Aureus Supabase Auth password grant")
 assert.doesNotMatch(supabase, /user_projects/, "no Aureus user_projects writes")
 assert.match(supabase, /readAureusShareholderByEmail/, "Aureus shareholder read helper exists")
 
@@ -32,6 +33,10 @@ assert.doesNotMatch(runner, /001_create_projects_system/, "old Aureus project-ta
 const dashboard = readFileSync(new URL("../src/routes/dashboard/index.tsx", import.meta.url), "utf8")
 assert.match(dashboard, /loadAureusMemberDashboard/, "dashboard ports Aureus member data")
 assert.doesNotMatch(dashboard, /project_id/, "dashboard does not query Aureus project_id")
+
+const uaLogin = readFileSync(new URL("../src/routes/api/ua-login.ts", import.meta.url), "utf8")
+assert.match(uaLogin, /initiate-login/, "Ubuntu login proxies official Aureus bcrypt login")
+assert.doesNotMatch(uaLogin, /signInWithPassword/, "login proxy does not use Supabase Auth password grant")
 
 const affiliate = readFileSync(new URL("../src/routes/affiliate/index.tsx", import.meta.url), "utf8")
 assert.match(affiliate, /ua_users/, "affiliate reads Ubuntu users")
