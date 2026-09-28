@@ -2,13 +2,17 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 
 const supabase = readFileSync(new URL("../src/lib/supabase.ts", import.meta.url), "utf8")
-assert.match(supabase, /ubuntu\.from\('ua_users'\)\.insert/, "signup writes Ubuntu ua_users only")
+assert.match(supabase, /ubuntu\.from\(["']ua_users["']\)\.insert/, "signup writes Ubuntu ua_users only")
+assert.match(supabase, /pending_aureus_provision:\s*true/, "new Ubuntu users are queued for Aureus identity, not written live")
+assert.match(supabase, /aureusRead\.auth\.signInWithPassword/, "existing Aureus users sign in without Ubuntu registration")
 assert.doesNotMatch(supabase, /user_projects/, "no Aureus user_projects writes")
 assert.match(supabase, /readAureusShareholderByEmail/, "Aureus shareholder read helper exists")
 
 const readonly = readFileSync(new URL("../src/lib/aureusReadOnly.ts", import.meta.url), "utf8")
 assert.match(readonly, /Aureus live database is read-only/, "read-only guard message present")
 assert.match(readonly, /insert/, "write methods blocked")
+assert.match(readonly, /signInWithPassword/, "Aureus password login is allowed")
+assert.match(readonly, /signUp/, "Aureus signup remains blocked")
 
 const ubuntu = readFileSync(new URL("../src/lib/ubuntuDb.ts", import.meta.url), "utf8")
 assert.match(ubuntu, /fgubaqoftdeefcakejwu/, "Ubuntu client refuses Aureus project ref")
@@ -25,7 +29,7 @@ assert.match(runner, /ubuntu-only/, "runner applies Ubuntu-only SQL")
 assert.doesNotMatch(runner, /001_create_projects_system/, "old Aureus project-table migrations are not run")
 
 const dashboard = readFileSync(new URL("../src/routes/dashboard/index.tsx", import.meta.url), "utf8")
-assert.match(dashboard, /ua_users/, "dashboard reads Ubuntu users")
+assert.match(dashboard, /loadAureusMemberDashboard/, "dashboard ports Aureus member data")
 assert.doesNotMatch(dashboard, /project_id/, "dashboard does not query Aureus project_id")
 
 const affiliate = readFileSync(new URL("../src/routes/affiliate/index.tsx", import.meta.url), "utf8")

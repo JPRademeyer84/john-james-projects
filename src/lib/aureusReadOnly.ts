@@ -30,26 +30,41 @@ function lockQuery(builder: any) {
   })
 }
 
+const AUREUS_AUTH_ALLOWED = new Set([
+  "signInWithPassword",
+  "signOut",
+  "getUser",
+  "getSession",
+  "onAuthStateChange",
+])
+
 export function createAureusReadOnlyClient(url: string, anonKey: string): SupabaseClient {
   const raw = createClient(url, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
   })
   return new Proxy(raw, {
     get(target, prop, receiver) {
-      if (prop === 'from') {
+      if (prop === "from") {
         return (table: string) => lockQuery(target.from(table))
       }
-      if (prop === 'rpc') {
-        return () => blockWrite('rpc')
+      if (prop === "rpc") {
+        return () => blockWrite("rpc")
       }
-      if (prop === 'auth') {
+      if (prop === "auth") {
         return new Proxy(target.auth, {
           get(authTarget, authProp, authReceiver) {
             const name = String(authProp)
-            if (name === 'signUp' || name === 'signInWithPassword' || name === 'updateUser' || name === 'admin') {
+            if (name === "signUp" || name === "updateUser" || name === "admin") {
               return () => blockWrite(`auth.${name}`)
             }
-            return Reflect.get(authTarget, authProp, authReceiver)
+            if (AUREUS_AUTH_ALLOWED.has(name) || typeof authProp === "symbol") {
+              return Reflect.get(authTarget, authProp, authReceiver)
+            }
+            const value = Reflect.get(authTarget, authProp, authReceiver)
+            if (typeof value === "function" && !AUREUS_AUTH_ALLOWED.has(name)) {
+              return () => blockWrite(`auth.${name}`)
+            }
+            return value
           },
         })
       }

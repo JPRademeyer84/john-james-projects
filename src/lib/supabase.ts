@@ -51,37 +51,53 @@ export interface Commission {
 
 export const auth = {
   async signIn(email: string, password: string) {
+    if (aureusRead) {
+      const aureusAttempt = await aureusRead.auth.signInWithPassword({ email, password })
+      if (!aureusAttempt.error && aureusAttempt.data.session) {
+        return { ...aureusAttempt.data, identitySource: "aureus" as const }
+      }
+    }
+
     requireUbuntu()
     const { data, error } = await ubuntu.auth.signInWithPassword({ email, password })
     if (error) throw error
-    return data
+    return { ...data, identitySource: "ubuntu" as const }
   },
 
   async signUp(email: string, password: string, username: string, sponsorCode?: string) {
     requireUbuntu()
     const { data: authData, error: authError } = await ubuntu.auth.signUp({ email, password })
     if (authError) throw authError
-    if (!authData.user) throw new Error('User creation failed')
+    if (!authData.user) throw new Error("User creation failed")
 
-    const { error: userError } = await ubuntu.from('ua_users').insert({
+    const { error: userError } = await ubuntu.from("ua_users").insert({
       auth_user_id: authData.user.id,
       email,
       username,
       sponsor_code: sponsorCode || null,
       is_active: true,
+      identity_source: "ubuntu",
+      pending_aureus_provision: true,
     })
     if (userError) throw userError
-    return authData
+    return { ...authData, identitySource: "ubuntu" as const, pendingAureusProvision: true }
   },
 
   async signOut() {
+    if (aureusRead) {
+      await aureusRead.auth.signOut()
+    }
     const { error } = await ubuntu.auth.signOut()
     if (error) throw error
   },
 
   async getCurrentUser() {
-    const { data: { user } } = await ubuntu.auth.getUser()
-    return user
+    if (aureusRead) {
+      const { data } = await aureusRead.auth.getUser()
+      if (data.user) return { user: data.user, identitySource: "aureus" as const }
+    }
+    const { data } = await ubuntu.auth.getUser()
+    return { user: data.user, identitySource: "ubuntu" as const }
   },
 }
 

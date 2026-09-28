@@ -112,7 +112,7 @@ function LoginPage() {
 
           <div className="mt-8 border-t border-border pt-6">
             <p className="text-center text-xs text-muted-foreground">
-              Existing Aureus.africa shareholder? Ubuntu Afrique can read your Aureus record. It never writes to the Aureus live database.
+              Existing Aureus.africa users sign in here with the same email and password. No second registration.
             </p>
           </div>
         </div>

@@ -152,6 +152,9 @@ function RegisterPage() {
               {loading ? "Creating account..." : "Create Account"}
             </button>
           </form>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            New Ubuntu Afrique accounts are stored on the Ubuntu Afrique database. Linking them into live Aureus Africa login is queued and is not written to Aureus until that identity step is explicitly approved.
+          </p>
         </div>
       </div>
     </div>
