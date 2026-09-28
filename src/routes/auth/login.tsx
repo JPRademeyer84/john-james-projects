@@ -36,12 +36,12 @@ function LoginPage() {
           <div className="text-center">
             <Link to="/" className="inline-flex items-center gap-2">
               <span className="grid h-12 w-12 place-items-center rounded-lg bg-gold-gradient text-primary-foreground font-display font-bold shadow-[var(--shadow-gold)]">
-                JJ
+                UA
               </span>
             </Link>
             <h1 className="mt-6 font-display text-3xl font-bold">Sign In</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Access your John James Projects account
+              Access your Ubuntu Afrique account
             </p>
           </div>
 
@@ -112,7 +112,7 @@ function LoginPage() {
 
           <div className="mt-8 border-t border-border pt-6">
             <p className="text-center text-xs text-muted-foreground">
-              Existing Aureus.africa user? Your account works here automatically.
+              Existing Aureus.africa shareholder? Ubuntu Afrique can read your Aureus record. It never writes to the Aureus live database.
             </p>
           </div>
         </div>

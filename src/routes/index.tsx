@@ -83,10 +83,10 @@ function Header() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <a href="#" className="flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-md bg-gold-gradient text-primary-foreground font-display font-bold shadow-[var(--shadow-gold)]">
-            JJ
+            UA
           </span>
           <span className="font-display text-lg font-semibold tracking-tight text-gold">
-            John James Projects
+            Ubuntu Afrique
           </span>
         </a>
         <nav className="hidden gap-8 md:flex">
@@ -128,7 +128,7 @@ function Hero() {
           </span>
           <h1 className="mt-6 font-display text-5xl font-bold leading-[1.05] md:text-7xl">
             Own a Piece of
-            <span className="block text-shimmer">John James Projects.</span>
+            <span className="block text-shimmer">Ubuntu Afrique.</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg text-muted-foreground">
             A limited fractional share offering — 500,000 shares at just{" "}
@@ -419,7 +419,7 @@ function CTASection() {
           <span className="block text-gold">One Opportunity.</span>
         </h2>
         <p className="mx-auto mt-6 max-w-xl text-muted-foreground">
-          Secure your fractional stake in John James Projects before the window closes.
+          Secure your fractional stake in Ubuntu Afrique before the window closes.
         </p>
         <div className="mt-10 flex justify-center">
           <CountdownTimer />
@@ -477,8 +477,8 @@ function MineSection() {
             <div className="mt-8 rounded-2xl border border-gold/30 bg-gold/5 p-6">
               <p className="text-sm text-muted-foreground">Established Backing</p>
               <p className="mt-2 font-display text-xl text-foreground">
-                <span className="text-gold">John James Property Development</span> — founded 1971,
-                funding Zimbabwean mining projects since 2016.
+                <span className="text-gold">Ubuntu Afrique</span> — Corporate Differential
+                Gap Cover, Cards, Fractional Shares, Marketplace, and NFT Share records.
               </p>
             </div>
           </div>
@@ -560,7 +560,7 @@ function DividendSection() {
           <div className="flex flex-col gap-6">
             <div className="rounded-2xl border border-gold/40 bg-gold/5 p-8 shadow-[var(--shadow-gold)]">
               <span className="text-xs font-semibold uppercase tracking-widest text-gold">
-                John James Allocation
+                Ubuntu Afrique Allocation
               </span>
               <div className="mt-4 space-y-3 text-sm text-muted-foreground">
                 <p>
@@ -1058,7 +1058,7 @@ function DividendCalculator() {
 
         <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-muted-foreground">
           Illustrative model. 50% of gross revenue is reserved for operating costs,
-          tax and refinery. John James Projects holds {JJ_SHARES.toLocaleString()} of{" "}
+          tax and refinery. Ubuntu Afrique holds {JJ_SHARES.toLocaleString()} of{" "}
           {TOTAL_SHARES.toLocaleString()} total Aureus Alliance Holdings shares,
           distributed across {FRACTIONAL_SHARES.toLocaleString()} fractional shares.
         </p>
@@ -1126,12 +1126,12 @@ function Footer() {
       <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
         <div className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-md bg-gold text-primary-foreground font-display text-sm font-bold">
-            JJ
+            UA
           </span>
-          <span className="font-display font-semibold text-gold">John James Projects</span>
+          <span className="font-display font-semibold text-gold">Ubuntu Afrique</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()} John James Projects. All rights reserved.
+          © {new Date().getFullYear()} Ubuntu Afrique. All rights reserved.
         </p>
       </div>
     </footer>

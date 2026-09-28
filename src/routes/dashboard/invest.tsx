@@ -96,7 +96,7 @@ function InvestPage() {
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold">Purchase Shares</h1>
           <p className="mt-2 text-muted-foreground">
-            Secure your fractional stake in John James Projects
+            Secure your fractional stake in Ubuntu Afrique
           </p>
         </div>
 

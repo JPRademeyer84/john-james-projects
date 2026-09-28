@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { TrendingUp, Users, Coins, ArrowRight } from "lucide-react";
-import { supabase, PROJECT_ID } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardPage,
@@ -56,9 +56,9 @@ function DashboardPage() {
 
       // Get user's integer ID from auth UUID
       const { data: userIdData } = await supabase
-        .from('users')
-        .select('id, username, email')
-        .eq('auth_user_id', user.id)
+        .from("ua_users")
+        .select("id, username, email")
+        .eq("auth_user_id", user.id)
         .single();
 
       if (!userIdData) {
@@ -68,22 +68,18 @@ function DashboardPage() {
 
       const userId = userIdData.id;
 
-      // Get investments for project_id = 2 only
       const { data: investments } = await supabase
-        .from('investments')
-        .select('amount, shares, status')
-        .eq('user_id', userId)
-        .eq('project_id', PROJECT_ID);
+        .from("ua_investments")
+        .select("amount, shares, status")
+        .eq("user_id", userId);
 
-      const totalShares = investments?.reduce((sum, inv) => sum + (inv.status === 'approved' ? inv.shares : 0), 0) || 0;
-      const totalInvested = investments?.reduce((sum, inv) => sum + (inv.status === 'approved' ? inv.amount : 0), 0) || 0;
+      const totalShares = investments?.reduce((sum, inv) => sum + (inv.status === "approved" ? Number(inv.shares) : 0), 0) || 0;
+      const totalInvested = investments?.reduce((sum, inv) => sum + (inv.status === "approved" ? Number(inv.amount) : 0), 0) || 0;
 
-      // Get commissions for project_id = 2 only
       const { data: commissions } = await supabase
-        .from('commissions')
-        .select('amount, status')
-        .eq('user_id', userId)
-        .eq('project_id', PROJECT_ID);
+        .from("ua_commissions")
+        .select("amount, status")
+        .eq("user_id", userId);
 
       const totalEarned = commissions?.reduce((sum, comm) => sum + comm.amount, 0) || 0;
       const pending = commissions?.filter(c => c.status === 'pending').reduce((sum, comm) => sum + comm.amount, 0) || 0;
@@ -138,10 +134,10 @@ function DashboardPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-md bg-gold-gradient text-primary-foreground font-display font-bold shadow-[var(--shadow-gold)]">
-              JJ
+              UA
             </span>
             <span className="font-display text-lg font-semibold tracking-tight text-gold">
-              John James Projects
+              Ubuntu Afrique
             </span>
           </div>
           <div className="flex items-center gap-6">

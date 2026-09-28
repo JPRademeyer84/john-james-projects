@@ -77,21 +77,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "John James Projects — 30-Day Fractional Share Offering" },
+      { title: "Ubuntu Afrique" },
       {
         name: "description",
         content:
-          "John James Projects: 500,000 fractional shares at $10 each. A limited 30-day offering with a rewarding affiliate plan in USDT.",
+          "Ubuntu Afrique: Gap Cover compensation, Aureus Cards, Fractional Shares, Marketplace, and NFT Share records on a one-way Aureus read connection.",
       },
-      { property: "og:title", content: "John James Projects — 30-Day Fractional Share Offering" },
+      { property: "og:title", content: "Ubuntu Afrique" },
       {
         property: "og:description",
-        content: "John James Projects: 500,000 fractional shares at $10 each. A limited 30-day offering with a rewarding affiliate plan in USDT.",
+        content: "Ubuntu Afrique: Gap Cover compensation, Aureus Cards, Fractional Shares, Marketplace, and NFT Share records on a one-way Aureus read connection.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "John James Projects — 30-Day Fractional Share Offering" },
-      { name: "twitter:description", content: "John James Projects: 500,000 fractional shares at $10 each. A limited 30-day offering with a rewarding affiliate plan in USDT." },
+      { name: "twitter:title", content: "Ubuntu Afrique" },
+      { name: "twitter:description", content: "Ubuntu Afrique: Gap Cover compensation, Aureus Cards, Fractional Shares, Marketplace, and NFT Share records on a one-way Aureus read connection." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ffcea48a-0799-4a2e-a5a1-af616204a458/id-preview-7709de63--f2d0a1e3-fb36-45d3-b94c-84075dc8915b.lovable.app-1784530568205.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ffcea48a-0799-4a2e-a5a1-af616204a458/id-preview-7709de63--f2d0a1e3-fb36-45d3-b94c-84075dc8915b.lovable.app-1784530568205.png" },
     ],
