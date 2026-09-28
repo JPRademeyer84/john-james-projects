@@ -4,8 +4,6 @@ import { TrendingUp, Users, Coins, ArrowRight } from "lucide-react";
 import { auth } from "../../lib/supabase";
 import {
   isAureusAdmin,
-  loadAureusMemberByAuthId,
-  loadAureusMemberDashboard,
   loadUbuntuMemberByAuthId,
 } from "../../lib/aureusMember";
 
@@ -61,12 +59,11 @@ function DashboardPage() {
       }
 
       if (current.identitySource === "aureus") {
-        const profile = current.profile || await loadAureusMemberByAuthId(current.user.id);
-        if (!profile) {
-          navigate({ to: "/auth/login" });
-          return;
+        const profile = current.profile
+        const ledger = current.ledger
+        if (!profile || !ledger) {
+          throw new Error("Aureus profile did not load. Sign in again.")
         }
-        const ledger = current.ledger || await loadAureusMemberDashboard(profile);
         setData({
           identitySource: "aureus",
           isAdmin: isAureusAdmin(profile),

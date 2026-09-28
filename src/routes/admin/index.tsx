@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { auth } from "../../lib/supabase"
-import { isAureusAdmin, loadAureusMemberByAuthId, type AureusMemberProfile } from "../../lib/aureusMember"
+import { isAureusAdmin, type AureusMemberProfile } from "../../lib/aureusMember"
 
 export const Route = createFileRoute("/admin/")({
   component: AdminPage,
@@ -24,7 +24,7 @@ function AdminPage() {
         navigate({ to: "/auth/login" })
         return
       }
-      const member = await loadAureusMemberByAuthId(current.user.id)
+      const member = current.profile
       if (!isAureusAdmin(member)) {
         setError("This Aureus account is not an administrator.")
         return

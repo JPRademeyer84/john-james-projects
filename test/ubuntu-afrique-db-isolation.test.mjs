@@ -31,7 +31,8 @@ assert.match(runner, /ubuntu-only/, "runner applies Ubuntu-only SQL")
 assert.doesNotMatch(runner, /001_create_projects_system/, "old Aureus project-table migrations are not run")
 
 const dashboard = readFileSync(new URL("../src/routes/dashboard/index.tsx", import.meta.url), "utf8")
-assert.match(dashboard, /loadAureusMemberDashboard/, "dashboard ports Aureus member data")
+assert.match(dashboard, /current\.profile/, "dashboard uses server-loaded Aureus profile")
+assert.doesNotMatch(dashboard, /loadAureusMemberByAuthId/, "dashboard does not query Aureus from the browser")
 assert.doesNotMatch(dashboard, /project_id/, "dashboard does not query Aureus project_id")
 
 const uaLogin = readFileSync(new URL("../src/routes/api/ua-login.ts", import.meta.url), "utf8")

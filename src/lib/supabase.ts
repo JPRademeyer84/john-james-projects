@@ -117,14 +117,16 @@ export const auth = {
       const res = await fetch("/api/ua-me", { headers: { Authorization: `Bearer ${token}` } })
       if (res.ok) {
         const json = await res.json()
-        return {
-          user: {
-            id: json.profile?.auth_user_id || String(json.profile?.id || ""),
-            email: json.profile?.email,
-          },
-          identitySource: "aureus" as const,
-          profile: json.profile,
-          ledger: json.ledger,
+        if (json.ok && json.profile) {
+          return {
+            user: {
+              id: String(json.profile.id || json.profile.auth_user_id || ""),
+              email: json.profile.email,
+            },
+            identitySource: "aureus" as const,
+            profile: json.profile,
+            ledger: json.ledger || { shares: 0, invested: 0, commissions: 0, pending: 0 },
+          }
         }
       }
       localStorage.removeItem("ua_session")

@@ -20,12 +20,18 @@ export const Route = createFileRoute("/api/ua-me")({
             })
           }
           const admin = createClient(aureusUrl, service, { auth: { persistSession: false, autoRefreshToken: false } })
-          const [{ data: profile }, { data: balances }, { data: purchases }, { data: commissions }] = await Promise.all([
+          const [{ data: profile, error: profileError }, { data: balances }, { data: purchases }, { data: commissions }] = await Promise.all([
             admin.from("users").select("id, email, username, full_name, phone, country_of_residence, is_admin, is_active, role, created_at, auth_user_id").eq("id", session.aureusUserId).maybeSingle(),
             admin.from("user_share_balances").select("net_shares").eq("user_id", session.aureusUserId).maybeSingle(),
             admin.from("aureus_share_purchases").select("shares_purchased, total_amount, status, created_at, payment_method").eq("user_id", session.aureusUserId).order("created_at", { ascending: false }).limit(25),
             admin.from("multi_level_commissions").select("amount, status, created_at").eq("referrer_id", session.aureusUserId).order("created_at", { ascending: false }).limit(25),
           ])
+          if (profileError) {
+            return Response.json({ ok: false, error: profileError.message }, { status: 502 })
+          }
+          if (!profile) {
+            return Response.json({ ok: false, error: "Aureus profile not found" }, { status: 404 })
+          }
           const purchaseRows = purchases || []
           const commissionRows = commissions || []
           const invested = purchaseRows.reduce((sum, row) => sum + Number(row.total_amount || 0), 0)
