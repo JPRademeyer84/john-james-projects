@@ -30,13 +30,7 @@ function lockQuery(builder: any) {
   })
 }
 
-const AUREUS_AUTH_ALLOWED = new Set([
-  "signInWithPassword",
-  "signOut",
-  "getUser",
-  "getSession",
-  "onAuthStateChange",
-])
+const AUREUS_AUTH_BLOCKED = new Set(["signUp", "updateUser", "admin"])
 
 export function createAureusReadOnlyClient(url: string, anonKey: string): SupabaseClient {
   const raw = createClient(url, anonKey, {
@@ -54,15 +48,12 @@ export function createAureusReadOnlyClient(url: string, anonKey: string): Supaba
         return new Proxy(target.auth, {
           get(authTarget, authProp, authReceiver) {
             const name = String(authProp)
-            if (name === "signUp" || name === "updateUser" || name === "admin") {
+            if (AUREUS_AUTH_BLOCKED.has(name)) {
               return () => blockWrite(`auth.${name}`)
-            }
-            if (AUREUS_AUTH_ALLOWED.has(name) || typeof authProp === "symbol") {
-              return Reflect.get(authTarget, authProp, authReceiver)
             }
             const value = Reflect.get(authTarget, authProp, authReceiver)
-            if (typeof value === "function" && !AUREUS_AUTH_ALLOWED.has(name)) {
-              return () => blockWrite(`auth.${name}`)
+            if (typeof value === "function") {
+              return value.bind(authTarget)
             }
             return value
           },

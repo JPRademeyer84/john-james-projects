@@ -11,8 +11,9 @@ assert.match(supabase, /readAureusShareholderByEmail/, "Aureus shareholder read 
 const readonly = readFileSync(new URL("../src/lib/aureusReadOnly.ts", import.meta.url), "utf8")
 assert.match(readonly, /Aureus live database is read-only/, "read-only guard message present")
 assert.match(readonly, /insert/, "write methods blocked")
-assert.match(readonly, /signInWithPassword/, "Aureus password login is allowed")
+assert.match(readonly, /AUREUS_AUTH_BLOCKED/, "only explicit Aureus auth writes are blocked")
 assert.match(readonly, /signUp/, "Aureus signup remains blocked")
+assert.match(readonly, /value\.bind\(authTarget\)/, "Aureus sign-in internals stay callable")
 
 const ubuntu = readFileSync(new URL("../src/lib/ubuntuDb.ts", import.meta.url), "utf8")
 assert.match(ubuntu, /fgubaqoftdeefcakejwu/, "Ubuntu client refuses Aureus project ref")
