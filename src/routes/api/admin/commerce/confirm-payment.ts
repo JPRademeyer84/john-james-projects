@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { confirmCommercePayment, createPendingCardOrder, createPendingFractionOrder } from "../../../../lib/commerceOrders.mjs"
+import { confirmCommercePayment, orderFromCardRow, orderFromFractionRow } from "../../../../lib/commerceOrders.mjs"
 import { getUbuntuServerClient, loadGapCoverMembers } from "../../../../lib/ubuntuServer.server"
 import { persistGapCoverResult } from "../../../../lib/persistGap.server"
 import { persistConfirmVolume } from "../../../../lib/persistVolume.server"
@@ -27,8 +27,9 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
 
         const paymentId = String(body.paymentId || "").trim()
         const kind = String(body.kind || "").toUpperCase()
-        if (!paymentId || (kind !== "CARD" && kind !== "FRACTION")) {
-          return Response.json({ ok: false, error: "paymentId and kind=CARD|FRACTION are required" }, { status: 400 })
+        const orderId = String(body.orderId || "").trim()
+        if (!paymentId || !orderId || (kind !== "CARD" && kind !== "FRACTION")) {
+          return Response.json({ ok: false, error: "paymentId, orderId, and kind=CARD|FRACTION are required" }, { status: 400 })
         }
 
         let ubuntu
@@ -37,43 +38,41 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
         } catch (err) {
           return Response.json({ ok: false, error: err instanceof Error ? err.message : "Ubuntu write refused" }, { status: 500 })
         }
+        if (!ubuntu) {
+          return Response.json({ ok: false, error: "Ubuntu Afrique database is not configured" }, { status: 503 })
+        }
+
+        const table = kind === "CARD" ? "ua_card_orders" : "ua_fraction_transactions"
+        const statusField = kind === "CARD" ? "order_status" : "transaction_status"
+        const { data: existing, error: existingError } = await ubuntu.from(table).select("*").eq("id", orderId).maybeSingle()
+        if (existingError) {
+          return Response.json({ ok: false, error: existingError.message }, { status: 500 })
+        }
+        if (!existing) {
+          return Response.json({ ok: false, error: "Pending order not found" }, { status: 404 })
+        }
+        if (String(existing[statusField] || "") === "PAID") {
+          return Response.json({
+            ok: true,
+            order: { id: orderId, status: "PAID", paymentId: existing.payment_id || paymentId },
+            idempotent: true,
+          })
+        }
 
         let order
         try {
           if (kind === "CARD") {
-            order = createPendingCardOrder({
-              orderId: String(body.orderId || ""),
-              userId: String(body.userId || ""),
-              productType: String(body.productType || ""),
-              quantity: Number(body.quantity || 1),
-              sponsorId: String(body.sponsorId || ""),
-            })
+            order = orderFromCardRow(existing)
           } else {
-            order = createPendingFractionOrder({
-              orderId: String(body.orderId || ""),
-              userId: String(body.userId || ""),
-              quantity: Number(body.quantity || 1),
-              aureusSharePrice: String(body.aureusSharePrice || "100.00"),
-              aureusPhase: Number(body.aureusPhase || 10),
-              remainingUnderlying: body.remainingUnderlying ? String(body.remainingUnderlying) : undefined,
-              sponsorId: String(body.sponsorId || ""),
-            })
+            const { data: inventory } = await ubuntu
+              .from("ua_underlying_inventory")
+              .select("remaining_underlying")
+              .eq("id", "AUREUS_100K")
+              .maybeSingle()
+            order = orderFromFractionRow(existing, inventory?.remaining_underlying ? String(inventory.remaining_underlying) : undefined)
           }
         } catch (err) {
           return Response.json({ ok: false, error: err instanceof Error ? err.message : "Order rebuild failed" }, { status: 400 })
-        }
-
-        if (ubuntu && body.orderId) {
-          const table = kind === "CARD" ? "ua_card_orders" : "ua_fraction_transactions"
-          const statusField = kind === "CARD" ? "order_status" : "transaction_status"
-          const { data: existing } = await ubuntu.from(table).select("*").eq("id", String(body.orderId)).maybeSingle()
-          if (existing && String(existing[statusField] || "") === "PAID") {
-            return Response.json({
-              ok: true,
-              order: { ...order, status: "PAID", paymentId: existing.payment_id || paymentId },
-              idempotent: true,
-            })
-          }
         }
 
         const sellerId = String(body.sellerId || order.sponsorId || order.userId)

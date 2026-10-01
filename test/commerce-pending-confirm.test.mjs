@@ -4,6 +4,10 @@ import {
   confirmCommercePayment,
   createPendingCardOrder,
   createPendingFractionOrder,
+  orderFromCardRow,
+  orderFromFractionRow,
+  pendingCardInsert,
+  pendingFractionInsert,
 } from "../src/lib/commerceOrders.mjs"
 import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
 
@@ -125,4 +129,39 @@ test("confirm fraction credits 10 QV and accrues 0.50 BLP; two sales sum on the 
   const summed = sumBlpAccruals([first.blpAccrual, second.blpAccrual])
   assert.equal(summed.commissionableSales, "110.00")
   assert.equal(summed.blpTotal, "5.50")
+})
+
+test("admin pending insert is PENDING_PAYMENT and confirm rebuilds from that row", () => {
+  const pending = createPendingCardOrder({
+    orderId: "11111111-1111-1111-1111-111111111111",
+    userId: "9",
+    productType: "CARD_PLASTIC",
+  })
+  const row = pendingCardInsert(pending)
+  assert.equal(row.order_status, "PENDING_PAYMENT")
+  assert.equal(row.product_id, "CARD_PLASTIC")
+  assert.equal(row.total, "100.00")
+  const rebuilt = orderFromCardRow(row)
+  const paid = confirmCommercePayment({ order: rebuilt, paymentId: "PAY-7", members: chain })
+  assert.equal(paid.status, "PAID")
+  assert.equal(paid.gapCover.totalPaid, "25.00")
+  assert.equal(paid.id, row.id)
+})
+
+test("admin pending fraction insert rebuilds from the stored Ubuntu row", () => {
+  const pending = createPendingFractionOrder({
+    orderId: "22222222-2222-2222-2222-222222222222",
+    userId: "9",
+    quantity: 1,
+    aureusSharePrice: "200.00",
+    aureusPhase: 11,
+    remainingUnderlying: "100000",
+  })
+  const row = pendingFractionInsert(pending)
+  assert.equal(row.transaction_status, "PENDING_PAYMENT")
+  assert.equal(row.total_amount, "10.00")
+  const rebuilt = orderFromFractionRow(row, "100000")
+  const paid = confirmCommercePayment({ order: rebuilt, paymentId: "PAY-8", members: chain })
+  assert.equal(paid.ownership.underlyingShareEquivalent, "0.05")
+  assert.equal(paid.gapCover.totalPaid, "2.50")
 })

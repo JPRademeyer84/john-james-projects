@@ -69,6 +69,71 @@ export function createPendingFractionOrder({
   }
 }
 
+export function pendingCardInsert(order) {
+  if (!order || order.kind !== "CARD" || order.status !== "PENDING_PAYMENT") {
+    throw new Error("pending card order is required")
+  }
+  return {
+    id: String(order.id),
+    user_id: Number.isInteger(Number(order.userId)) ? Number(order.userId) : null,
+    product_id: order.productId,
+    quantity: order.quantity,
+    unit_price: order.quote.unit.retailPrice,
+    total: order.total,
+    qv: order.qv,
+    order_status: "PENDING_PAYMENT",
+    sponsor_id: order.sponsorId || null,
+  }
+}
+
+export function pendingFractionInsert(order) {
+  if (!order || order.kind !== "FRACTION" || order.status !== "PENDING_PAYMENT") {
+    throw new Error("pending fraction order is required")
+  }
+  return {
+    id: String(order.id),
+    buyer_id: Number.isInteger(Number(order.userId)) ? Number(order.userId) : null,
+    quantity: order.quantity,
+    fraction_price: "10.00",
+    total_amount: order.total,
+    aureus_phase: order.aureusPhase,
+    aureus_share_price: order.aureusSharePrice,
+    underlying_share_equivalent: order.underlyingShareEquivalent,
+    allocation_component: order.allocationComponent,
+    qv: order.qv,
+    transaction_status: "PENDING_PAYMENT",
+    sponsor_id: order.sponsorId || null,
+  }
+}
+
+export function orderFromCardRow(row) {
+  if (!row || !row.id) {
+    throw new Error("Pending order not found")
+  }
+  return createPendingCardOrder({
+    orderId: String(row.id),
+    userId: String(row.user_id || ""),
+    productType: String(row.product_id || ""),
+    quantity: Number(row.quantity || 1),
+    sponsorId: String(row.sponsor_id || ""),
+  })
+}
+
+export function orderFromFractionRow(row, remainingUnderlying) {
+  if (!row || !row.id) {
+    throw new Error("Pending order not found")
+  }
+  return createPendingFractionOrder({
+    orderId: String(row.id),
+    userId: String(row.buyer_id || ""),
+    quantity: Number(row.quantity || 1),
+    aureusSharePrice: String(row.aureus_share_price || "100.00"),
+    aureusPhase: Number(row.aureus_phase || 10),
+    remainingUnderlying,
+    sponsorId: String(row.sponsor_id || ""),
+  })
+}
+
 export function confirmCommercePayment({
   order,
   paymentId,

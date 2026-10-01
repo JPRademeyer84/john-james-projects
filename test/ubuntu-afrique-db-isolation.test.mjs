@@ -71,12 +71,33 @@ const invest = readFileSync(new URL("../src/routes/dashboard/invest.tsx", import
 assert.match(invest, /checkout is not open/, "commerce checkout is not open")
 assert.doesNotMatch(invest, /\/api\/invest\/purchase/, "no fake invest purchase path")
 assert.doesNotMatch(invest, /\/api\/admin\/commerce\/confirm-payment/, "public invest page cannot confirm payment")
+assert.doesNotMatch(invest, /\/api\/cards\/order/, "public invest page cannot create card orders")
+assert.doesNotMatch(invest, /\/api\/fractions\/order/, "public invest page cannot create fraction orders")
+assert.doesNotMatch(invest, /\/api\/admin\/commerce\/create-order/, "public invest page cannot create admin orders")
+
+const publicCardOrder = readFileSync(new URL("../src/routes/api/cards/order.ts", import.meta.url), "utf8")
+assert.match(publicCardOrder, /Public checkout is not open/, "public card order path is closed")
+assert.doesNotMatch(publicCardOrder, /ua_card_orders/, "public card order does not insert Ubuntu rows")
+
+const publicFractionOrder = readFileSync(new URL("../src/routes/api/fractions/order.ts", import.meta.url), "utf8")
+assert.match(publicFractionOrder, /Public checkout is not open/, "public fraction order path is closed")
+assert.doesNotMatch(publicFractionOrder, /ua_fraction_transactions/, "public fraction order does not insert Ubuntu rows")
+
+const createOrder = readFileSync(new URL("../src/routes/api/admin/commerce/create-order.ts", import.meta.url), "utf8")
+assert.match(createOrder, /UA_COMMERCE_CONFIRM_SECRET/, "admin order create is secret-gated")
+assert.match(createOrder, /Client-supplied rank chains are rejected/, "admin order create rejects client rank chains")
+assert.match(createOrder, /persistPendingCardOrder/, "admin create inserts ua_card_orders")
+assert.match(createOrder, /persistPendingFractionOrder/, "admin create inserts ua_fraction_transactions")
+assert.match(createOrder, /PENDING_PAYMENT|createPendingCardOrder/, "admin create starts as pending")
+assert.doesNotMatch(createOrder, /fgubaqoftdeefcakejwu/, "admin create never targets Aureus")
 
 const confirmPay = readFileSync(new URL("../src/routes/api/admin/commerce/confirm-payment.ts", import.meta.url), "utf8")
 assert.match(confirmPay, /UA_COMMERCE_CONFIRM_SECRET/, "payment confirm is secret-gated")
 assert.match(confirmPay, /Client-supplied rank chains are rejected/, "confirm API rejects client rank chains")
 assert.match(confirmPay, /processGapCover|confirmCommercePayment/, "confirm uses the shared Gap Cover path")
 assert.match(confirmPay, /persistConfirmVolume/, "confirm credits monthly QV and open BLP period")
+assert.match(confirmPay, /Pending order not found/, "confirm requires a real persisted pending row")
+assert.match(confirmPay, /orderFromCardRow|orderFromFractionRow/, "confirm rebuilds from the Ubuntu row, not client product fields")
 assert.doesNotMatch(confirmPay, /\/dashboard\/invest/, "confirm API is not the public invest page")
 
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
@@ -100,6 +121,11 @@ assert.match(blpClose, /monthlyVolumeReset/, "close reports monthly team QV rese
 const schema6 = readFileSync(new URL("../supabase/ubuntu-only/0006_ua_blp_contributions.sql", import.meta.url), "utf8")
 assert.match(schema6, /NEVER run this on Aureus production/, "0006 refuses Aureus")
 assert.match(schema6, /ua_blp_contributions/, "BLP contribution ledger exists")
+
+const persistPending = readFileSync(new URL("../src/lib/persistPending.server.ts", import.meta.url), "utf8")
+assert.match(persistPending, /ua_card_orders/, "pending persist writes Ubuntu card orders")
+assert.match(persistPending, /ua_fraction_transactions/, "pending persist writes Ubuntu fraction transactions")
+assert.doesNotMatch(persistPending, /fgubaqoftdeefcakejwu/, "pending persist never targets Aureus")
 
 const persistVolume = readFileSync(new URL("../src/lib/persistVolume.server.ts", import.meta.url), "utf8")
 assert.match(persistVolume, /monthly_team_qv/, "confirm persist credits monthly team QV")
