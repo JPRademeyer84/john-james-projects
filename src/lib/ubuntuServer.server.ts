@@ -63,3 +63,23 @@ export async function loadGapCoverMembers(ubuntu: SupabaseClient, sellerId: stri
 
   return members
 }
+export async function loadBlpMembers(ubuntu: SupabaseClient) {
+  const { data: ranks, error: rankError } = await ubuntu
+    .from("ua_user_ranks")
+    .select("user_id, rank_code")
+  if (rankError) throw new Error(rankError.message)
+
+  const { data: volumes, error: volumeError } = await ubuntu
+    .from("ua_team_volume")
+    .select("user_id, monthly_team_qv")
+  if (volumeError) throw new Error(volumeError.message)
+
+  const volumeByUser = new Map(
+    (volumes || []).map((row) => [String(row.user_id), String(row.monthly_team_qv || "0")])
+  )
+  return (ranks || []).map((row) => ({
+    userId: String(row.user_id),
+    rank: String(row.rank_code || ""),
+    qualifiedMonthlyVolume: volumeByUser.get(String(row.user_id)) || "0",
+  }))
+}

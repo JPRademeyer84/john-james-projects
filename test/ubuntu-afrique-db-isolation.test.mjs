@@ -23,6 +23,7 @@ assert.match(ubuntu, /assertUbuntuWriteTarget/, "write target assertion exported
 const env = readFileSync(new URL("../.env.example", import.meta.url), "utf8")
 assert.match(env, /VITE_UBUNTU_SUPABASE_URL/, "Ubuntu write env documented")
 assert.match(env, /VITE_AUREUS_SUPABASE_URL/, "Aureus read env documented")
+assert.match(env, /UA_COMMERCE_CONFIRM_SECRET/, "confirm/BLP close secret is documented")
 assert.doesNotMatch(env, /VITE_SUPABASE_URL=https:\/\/fgubaqoftdeefcakejwu/, "old single Aureus write URL removed")
 
 const runner = readFileSync(new URL("../deploy/run-migrations.js", import.meta.url), "utf8")
@@ -80,7 +81,24 @@ const processApi = readFileSync(new URL("../src/routes/api/commissions/process.t
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")
 assert.match(processApi, /getUbuntuServerClient/, "commission writes use the Ubuntu server client")
 
+const schema5 = readFileSync(new URL("../supabase/ubuntu-only/0005_ua_blp.sql", import.meta.url), "utf8")
+assert.match(schema5, /NEVER run this on Aureus production/, "0005 refuses Aureus")
+assert.match(schema5, /ua_blp_periods/, "BLP period table exists")
+assert.match(schema5, /ua_blp_transactions/, "BLP transaction table exists")
+
+const blpClose = readFileSync(new URL("../src/routes/api/admin/blp/close-period.ts", import.meta.url), "utf8")
+assert.match(blpClose, /UA_COMMERCE_CONFIRM_SECRET/, "BLP close is secret-gated")
+assert.match(blpClose, /Client-supplied rank chains are rejected/, "BLP close rejects client rank chains")
+assert.match(blpClose, /distributeBlpPeriod/, "BLP close uses the shared BLP engine")
+assert.match(blpClose, /loadBlpMembers/, "BLP members load from Ubuntu ranks and monthly volume")
+
+const persistBlp = readFileSync(new URL("../src/lib/persistBlp.server.ts", import.meta.url), "utf8")
+assert.match(persistBlp, /entry_type: "BLP"/, "BLP posts to the Ubuntu wallet ledger")
+assert.doesNotMatch(persistBlp, /fgubaqoftdeefcakejwu/, "BLP persist never targets Aureus")
+
 const ubuntuServer = readFileSync(new URL("../src/lib/ubuntuServer.server.ts", import.meta.url), "utf8")
 assert.match(ubuntuServer, /Aureus production/, "commission API refuses Aureus writes")
+assert.match(ubuntuServer, /loadBlpMembers/, "BLP member loader exists")
+assert.match(ubuntuServer, /monthly_team_qv/, "BLP qualification uses monthly team QV")
 
 console.log("ubuntu-afrique-db-isolation.test.mjs: OK")
