@@ -1,6 +1,7 @@
 import { quoteCard } from "./cardEconomics.mjs"
 import { quoteFractions } from "./fractionEngine.mjs"
 import { processGapCover } from "./gapCover.mjs"
+import { creditConfirmVolume } from "./volumeEngine.mjs"
 
 export function createPendingCardOrder({
   orderId,
@@ -68,7 +69,14 @@ export function createPendingFractionOrder({
   }
 }
 
-export function confirmCommercePayment({ order, paymentId, members, scheduleId = "STANDARD_25" }) {
+export function confirmCommercePayment({
+  order,
+  paymentId,
+  members,
+  scheduleId = "STANDARD_25",
+  uplineUserIds = [],
+  now = new Date(),
+}) {
   if (!order || !order.id) {
     throw new Error("order is required")
   }
@@ -90,6 +98,11 @@ export function confirmCommercePayment({ order, paymentId, members, scheduleId =
     members,
     scheduleId,
   })
+  const volume = creditConfirmVolume({
+    order,
+    uplineUserIds: uplineUserIds.length ? uplineUserIds : (members || []).map((row) => row.userId),
+    now,
+  })
 
   const confirmed = {
     ...order,
@@ -101,6 +114,8 @@ export function confirmCommercePayment({ order, paymentId, members, scheduleId =
       payments: gap.payments,
       compPlanVersion: gap.compPlanVersion,
     },
+    volume,
+    blpAccrual: volume.blpAccrual,
   }
 
   if (order.kind === "FRACTION") {

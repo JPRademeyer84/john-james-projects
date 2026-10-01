@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { distributeBlpPeriod } from "../../../../lib/blpEngine.mjs"
 import { persistBlpPeriod } from "../../../../lib/persistBlp.server"
+import { currentBlpPeriod } from "../../../../lib/volumeEngine.mjs"
 import { getUbuntuServerClient, loadBlpMembers } from "../../../../lib/ubuntuServer.server"
 
 function authorizeBlp(request: Request, body: Record<string, unknown>) {
@@ -26,17 +27,15 @@ export const Route = createFileRoute("/api/admin/blp/close-period")({
         if (Array.isArray(body.members) && body.members.length) {
           return Response.json({ ok: false, error: "Client-supplied rank chains are rejected" }, { status: 400 })
         }
-
-        const periodId = String(body.periodId || "").trim()
-        const startsAt = String(body.startsAt || "").trim()
-        const endsAt = String(body.endsAt || "").trim()
-        const commissionableSales = String(body.commissionableSales || "").trim()
-        if (!periodId || !startsAt || !endsAt || !commissionableSales) {
+        if (body.commissionableSales != null && String(body.commissionableSales).trim() !== "") {
           return Response.json({
             ok: false,
-            error: "periodId, startsAt, endsAt, and commissionableSales are required",
+            error: "commissionableSales is taken from the open Ubuntu BLP period, not the client",
           }, { status: 400 })
         }
+
+        const computed = currentBlpPeriod()
+        const periodId = String(body.periodId || computed.periodId).trim()
 
         let ubuntu
         try {
@@ -48,10 +47,26 @@ export const Route = createFileRoute("/api/admin/blp/close-period")({
           return Response.json({ ok: false, error: "Ubuntu Afrique database is not configured" }, { status: 503 })
         }
 
+        const { data: period, error: periodError } = await ubuntu
+          .from("ua_blp_periods")
+          .select("id, starts_at, ends_at, commissionable_sales, blp_total, status")
+          .eq("id", periodId)
+          .maybeSingle()
+        if (periodError) {
+          return Response.json({ ok: false, error: periodError.message }, { status: 500 })
+        }
+        if (!period) {
+          return Response.json({ ok: false, error: "Open BLP period not found" }, { status: 404 })
+        }
+
         const members = await loadBlpMembers(ubuntu)
         let result
         try {
-          result = distributeBlpPeriod({ periodId, commissionableSales, members })
+          result = distributeBlpPeriod({
+            periodId,
+            commissionableSales: String(period.commissionable_sales || "0"),
+            members,
+          })
         } catch (err) {
           return Response.json({ ok: false, error: err instanceof Error ? err.message : "BLP failed" }, { status: 400 })
         }
@@ -59,8 +74,8 @@ export const Route = createFileRoute("/api/admin/blp/close-period")({
         try {
           const persisted = await persistBlpPeriod(ubuntu, {
             periodId: result.periodId,
-            startsAt,
-            endsAt,
+            startsAt: String(period.starts_at || computed.startsAt),
+            endsAt: String(period.ends_at || computed.endsAt),
             commissionableSales: result.commissionableSales,
             blpTotal: result.blpTotal,
             unclaimedTotal: result.unclaimedTotal,

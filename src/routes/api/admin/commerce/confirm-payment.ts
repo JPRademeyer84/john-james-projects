@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { confirmCommercePayment, createPendingCardOrder, createPendingFractionOrder } from "../../../../lib/commerceOrders.mjs"
 import { getUbuntuServerClient, loadGapCoverMembers } from "../../../../lib/ubuntuServer.server"
 import { persistGapCoverResult } from "../../../../lib/persistGap.server"
+import { persistConfirmVolume } from "../../../../lib/persistVolume.server"
 
 function authorizeConfirm(request: Request, body: Record<string, unknown>) {
   const expected = String(process.env.UA_COMMERCE_CONFIRM_SECRET || "")
@@ -84,9 +85,10 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
           return Response.json({ ok: false, error: "Client-supplied rank chains are rejected" }, { status: 400 })
         }
 
+        const uplineUserIds = [sellerId, ...members.map((row) => row.userId)]
         let confirmed
         try {
-          confirmed = confirmCommercePayment({ order, paymentId, members })
+          confirmed = confirmCommercePayment({ order, paymentId, members, uplineUserIds })
         } catch (err) {
           return Response.json({ ok: false, error: err instanceof Error ? err.message : "Confirm failed" }, { status: 400 })
         }
@@ -124,6 +126,9 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
                   underlying_share_equivalent: confirmed.underlyingShareEquivalent,
                 })
               }
+            }
+            if (confirmed.volume) {
+              await persistConfirmVolume(ubuntu, confirmed.volume)
             }
           } catch (err) {
             return Response.json({ ok: false, error: err instanceof Error ? err.message : "Persist failed" }, { status: 500 })

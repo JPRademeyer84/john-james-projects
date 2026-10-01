@@ -5,6 +5,7 @@ import {
   createPendingCardOrder,
   createPendingFractionOrder,
 } from "../src/lib/commerceOrders.mjs"
+import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
 
 const chain = [
   { userId: "ssa", rank: "SSA" },
@@ -23,6 +24,8 @@ test("pending card order does not run Gap Cover until payment confirm", () => {
   assert.equal(pending.status, "PENDING_PAYMENT")
   assert.equal(pending.ubuntuAfriqueGross, "15.00")
   assert.equal(pending.gapCover, undefined)
+  assert.equal(pending.volume, undefined)
+  assert.equal(pending.blpAccrual, undefined)
 })
 
 test("confirm plastic card runs one Gap Cover pass totaling 25.00", () => {
@@ -69,4 +72,57 @@ test("duplicate confirm is idempotent and does not create a second gap pass", ()
     () => confirmCommercePayment({ order: first, paymentId: "PAY-OTHER", members: chain }),
     /different payment/
   )
+  assert.equal(second.volume.qv, first.volume.qv)
+  assert.equal(second.blpAccrual.blpAdded, first.blpAccrual.blpAdded)
+})
+
+test("confirm plastic card credits 100 QV and accrues 5.00 BLP into the open month", () => {
+  const paid = confirmCommercePayment({
+    order: createPendingCardOrder({
+      orderId: "CARD-4",
+      userId: "9",
+      productType: "CARD_PLASTIC",
+    }),
+    paymentId: "PAY-4",
+    members: chain,
+    now: new Date("2026-10-01T12:00:00Z"),
+  })
+  const period = currentBlpPeriod(new Date("2026-10-01T12:00:00Z"))
+  assert.equal(paid.volume.qv, "100.00")
+  assert.equal(paid.volume.buyerId, "9")
+  assert.deepEqual(paid.volume.teamUserIds, ["9", "ssa", "asm", "bsm", "ssm", "vp"])
+  assert.equal(paid.blpAccrual.periodId, period.periodId)
+  assert.equal(paid.blpAccrual.commissionableAdded, "100.00")
+  assert.equal(paid.blpAccrual.blpAdded, "5.00")
+})
+
+test("confirm fraction credits 10 QV and accrues 0.50 BLP; two sales sum on the open period", () => {
+  const first = confirmCommercePayment({
+    order: createPendingFractionOrder({
+      orderId: "FRAC-2",
+      userId: "9",
+      quantity: 1,
+      aureusSharePrice: "100.00",
+      aureusPhase: 10,
+    }),
+    paymentId: "PAY-5",
+    members: chain,
+    now: new Date("2026-10-15T00:00:00Z"),
+  })
+  const second = confirmCommercePayment({
+    order: createPendingCardOrder({
+      orderId: "CARD-5",
+      userId: "9",
+      productType: "CARD_PLASTIC",
+    }),
+    paymentId: "PAY-6",
+    members: chain,
+    now: new Date("2026-10-15T00:00:00Z"),
+  })
+  assert.equal(first.volume.qv, "10.00")
+  assert.equal(first.blpAccrual.blpAdded, "0.50")
+  assert.equal(second.volume.qv, "100.00")
+  const summed = sumBlpAccruals([first.blpAccrual, second.blpAccrual])
+  assert.equal(summed.commissionableSales, "110.00")
+  assert.equal(summed.blpTotal, "5.50")
 })

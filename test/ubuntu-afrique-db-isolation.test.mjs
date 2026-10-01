@@ -76,6 +76,8 @@ const confirmPay = readFileSync(new URL("../src/routes/api/admin/commerce/confir
 assert.match(confirmPay, /UA_COMMERCE_CONFIRM_SECRET/, "payment confirm is secret-gated")
 assert.match(confirmPay, /Client-supplied rank chains are rejected/, "confirm API rejects client rank chains")
 assert.match(confirmPay, /processGapCover|confirmCommercePayment/, "confirm uses the shared Gap Cover path")
+assert.match(confirmPay, /persistConfirmVolume/, "confirm credits monthly QV and open BLP period")
+assert.doesNotMatch(confirmPay, /\/dashboard\/invest/, "confirm API is not the public invest page")
 
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")
@@ -91,6 +93,17 @@ assert.match(blpClose, /UA_COMMERCE_CONFIRM_SECRET/, "BLP close is secret-gated"
 assert.match(blpClose, /Client-supplied rank chains are rejected/, "BLP close rejects client rank chains")
 assert.match(blpClose, /distributeBlpPeriod/, "BLP close uses the shared BLP engine")
 assert.match(blpClose, /loadBlpMembers/, "BLP members load from Ubuntu ranks and monthly volume")
+assert.match(blpClose, /taken from the open Ubuntu BLP period/, "close rejects client-supplied BLP sales")
+assert.match(blpClose, /commissionable_sales/, "close distributes from stored period sales")
+
+const schema6 = readFileSync(new URL("../supabase/ubuntu-only/0006_ua_blp_contributions.sql", import.meta.url), "utf8")
+assert.match(schema6, /NEVER run this on Aureus production/, "0006 refuses Aureus")
+assert.match(schema6, /ua_blp_contributions/, "BLP contribution ledger exists")
+
+const persistVolume = readFileSync(new URL("../src/lib/persistVolume.server.ts", import.meta.url), "utf8")
+assert.match(persistVolume, /monthly_team_qv/, "confirm persist credits monthly team QV")
+assert.match(persistVolume, /ua_blp_contributions/, "confirm persist accrues open BLP period")
+assert.doesNotMatch(persistVolume, /fgubaqoftdeefcakejwu/, "volume persist never targets Aureus")
 
 const persistBlp = readFileSync(new URL("../src/lib/persistBlp.server.ts", import.meta.url), "utf8")
 assert.match(persistBlp, /entry_type: "BLP"/, "BLP posts to the Ubuntu wallet ledger")
