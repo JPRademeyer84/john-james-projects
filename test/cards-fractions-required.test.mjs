@@ -40,6 +40,16 @@ test("136 phase change: 80000 remaining is 1600000 fractions at $200 and 2400000
   assert.equal(locked.underlyingShareEquivalent, "0.05")
 })
 
+test("live remaining 0.00 is sold through before confirm", () => {
+  const empty = phaseAvailability("0", "200.00")
+  assert.equal(empty.remainingUnderlying, "0.00")
+  assert.equal(empty.maxSaleValue, "0.00")
+  assert.throws(
+    () => quoteFractions({ quantity: 1, aureusSharePrice: "200.00", remainingUnderlying: "0" }),
+    /exceeds remaining underlying/
+  )
+})
+
 test("137 inventory limit: 0.25 remaining at $200 rejects more than $50", () => {
   const available = phaseAvailability("0.25", "200.00")
   assert.equal(available.maxSaleValue, "50.00")

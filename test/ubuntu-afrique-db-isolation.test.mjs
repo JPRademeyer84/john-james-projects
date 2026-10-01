@@ -111,6 +111,22 @@ assert.match(persistInventory, /FRACTION_SALE/, "inventory consume is ledgered")
 assert.match(persistInventory, /exceeds remaining underlying/, "sold-through confirm is refused")
 assert.doesNotMatch(persistInventory, /fgubaqoftdeefcakejwu/, "inventory persist never targets Aureus")
 
+const fractionQuote = readFileSync(new URL("../src/routes/api/fractions/quote.ts", import.meta.url), "utf8")
+assert.match(fractionQuote, /loadUnderlyingInventory/, "fraction quote reads live Ubuntu remaining")
+assert.match(fractionQuote, /taken from Ubuntu inventory/, "fraction quote rejects client remaining")
+assert.match(fractionQuote, /checkoutEnabled: false/, "fraction quote keeps checkout closed")
+assert.doesNotMatch(fractionQuote, /\.insert\(|\.update\(|\.delete\(/, "fraction quote does not write inventory")
+
+const fractionAvail = readFileSync(new URL("../src/routes/api/fractions/availability.ts", import.meta.url), "utf8")
+assert.match(fractionAvail, /loadUnderlyingInventory/, "fraction availability reads live Ubuntu remaining")
+assert.match(fractionAvail, /taken from Ubuntu inventory/, "fraction availability rejects client remaining")
+assert.match(fractionAvail, /checkoutEnabled: false/, "fraction availability keeps checkout closed")
+assert.doesNotMatch(fractionAvail, /\.insert\(|\.update\(|\.delete\(/, "fraction availability does not write inventory")
+
+const ubuntuServerAfter = readFileSync(new URL("../src/lib/ubuntuServer.server.ts", import.meta.url), "utf8")
+assert.match(ubuntuServerAfter, /loadUnderlyingInventory/, "Ubuntu inventory loader exists")
+assert.match(ubuntuServerAfter, /ua_underlying_inventory/, "inventory loader reads Ubuntu remaining")
+
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")
 assert.match(processApi, /getUbuntuServerClient/, "commission writes use the Ubuntu server client")
