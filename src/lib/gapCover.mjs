@@ -13,7 +13,7 @@ export function processGapCover({ commissionableValue, members, scheduleId = "ST
   if (scheduleId !== schedule.id) {
     throw new Error(`Unsupported commission schedule: ${scheduleId}`)
   }
-  if (!Array.isArray(members) || members.length === 0) {
+  if (!Array.isArray(members)) {
     throw new Error("Gap Cover requires a seller/upline member list")
   }
 

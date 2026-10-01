@@ -69,6 +69,12 @@ assert.match(schema4, /ua_fraction_transactions/, "fraction transactions table e
 const invest = readFileSync(new URL("../src/routes/dashboard/invest.tsx", import.meta.url), "utf8")
 assert.match(invest, /checkout is not open/, "commerce checkout is not open")
 assert.doesNotMatch(invest, /\/api\/invest\/purchase/, "no fake invest purchase path")
+assert.doesNotMatch(invest, /\/api\/admin\/commerce\/confirm-payment/, "public invest page cannot confirm payment")
+
+const confirmPay = readFileSync(new URL("../src/routes/api/admin/commerce/confirm-payment.ts", import.meta.url), "utf8")
+assert.match(confirmPay, /UA_COMMERCE_CONFIRM_SECRET/, "payment confirm is secret-gated")
+assert.match(confirmPay, /Client-supplied rank chains are rejected/, "confirm API rejects client rank chains")
+assert.match(confirmPay, /processGapCover|confirmCommercePayment/, "confirm uses the shared Gap Cover path")
 
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")
