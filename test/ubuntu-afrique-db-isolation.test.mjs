@@ -98,7 +98,18 @@ assert.match(confirmPay, /processGapCover|confirmCommercePayment/, "confirm uses
 assert.match(confirmPay, /persistConfirmVolume/, "confirm credits monthly QV and open BLP period")
 assert.match(confirmPay, /Pending order not found/, "confirm requires a real persisted pending row")
 assert.match(confirmPay, /orderFromCardRow|orderFromFractionRow/, "confirm rebuilds from the Ubuntu row, not client product fields")
+assert.match(confirmPay, /persistFractionInventory/, "fraction confirm decrements Ubuntu remaining inventory")
 assert.doesNotMatch(confirmPay, /\/dashboard\/invest/, "confirm API is not the public invest page")
+
+const schema7 = readFileSync(new URL("../supabase/ubuntu-only/0007_ua_fraction_inventory.sql", import.meta.url), "utf8")
+assert.match(schema7, /NEVER run this on Aureus production/, "0007 refuses Aureus")
+assert.match(schema7, /ua_liability_source_type/, "fraction sale ledger is unique per order")
+
+const persistInventory = readFileSync(new URL("../src/lib/persistInventory.server.ts", import.meta.url), "utf8")
+assert.match(persistInventory, /ua_underlying_inventory/, "inventory persist writes Ubuntu remaining")
+assert.match(persistInventory, /FRACTION_SALE/, "inventory consume is ledgered")
+assert.match(persistInventory, /exceeds remaining underlying/, "sold-through confirm is refused")
+assert.doesNotMatch(persistInventory, /fgubaqoftdeefcakejwu/, "inventory persist never targets Aureus")
 
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")

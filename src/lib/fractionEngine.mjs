@@ -75,6 +75,27 @@ export function quoteFractions({
   }
 }
 
+export function consumeUnderlyingInventory({
+  remainingUnderlying,
+  soldUnderlying = "0",
+  underlyingShareEquivalent,
+}) {
+  const remaining = parseMoney(remainingUnderlying)
+  const sold = parseMoney(soldUnderlying)
+  const used = parseMoney(underlyingShareEquivalent)
+  if (used <= 0n) {
+    throw new Error("underlyingShareEquivalent must be greater than zero")
+  }
+  if (used > remaining) {
+    throw new Error("Purchase exceeds remaining underlying share inventory")
+  }
+  return {
+    remainingUnderlying: formatMoney2(remaining - used),
+    soldUnderlying: formatMoney2(sold + used),
+    underlyingShareEquivalent: formatMoney2(used),
+  }
+}
+
 export function phaseAvailability(remainingUnderlying, aureusSharePrice) {
   return {
     remainingUnderlying: formatMoney2(parseMoney(remainingUnderlying)),

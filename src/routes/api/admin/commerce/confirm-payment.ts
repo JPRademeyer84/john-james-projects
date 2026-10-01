@@ -3,6 +3,7 @@ import { confirmCommercePayment, orderFromCardRow, orderFromFractionRow } from "
 import { getUbuntuServerClient, loadGapCoverMembers } from "../../../../lib/ubuntuServer.server"
 import { persistGapCoverResult } from "../../../../lib/persistGap.server"
 import { persistConfirmVolume } from "../../../../lib/persistVolume.server"
+import { persistFractionInventory } from "../../../../lib/persistInventory.server"
 
 function authorizeConfirm(request: Request, body: Record<string, unknown>) {
   const expected = String(process.env.UA_COMMERCE_CONFIRM_SECRET || "")
@@ -66,10 +67,13 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
           } else {
             const { data: inventory } = await ubuntu
               .from("ua_underlying_inventory")
-              .select("remaining_underlying")
+              .select("remaining_underlying, sold_underlying")
               .eq("id", "AUREUS_100K")
               .maybeSingle()
             order = orderFromFractionRow(existing, inventory?.remaining_underlying ? String(inventory.remaining_underlying) : undefined)
+            if (inventory?.sold_underlying != null) {
+              order.soldUnderlying = String(inventory.sold_underlying)
+            }
           }
         } catch (err) {
           return Response.json({ ok: false, error: err instanceof Error ? err.message : "Order rebuild failed" }, { status: 400 })
@@ -111,6 +115,10 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
                 payment_id: paymentId,
               }).eq("id", confirmed.id)
             } else {
+              await persistFractionInventory(ubuntu, {
+                sourceTransactionId: confirmed.id,
+                underlyingShareEquivalent: confirmed.ownership.underlyingShareEquivalent,
+              })
               await ubuntu.from("ua_fraction_transactions").update({
                 transaction_status: "PAID",
                 payment_id: paymentId,

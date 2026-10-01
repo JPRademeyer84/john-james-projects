@@ -43,6 +43,7 @@ test("confirm plastic card runs one Gap Cover pass totaling 25.00", () => {
   assert.equal(paid.gapCover.totalPaid, "25.00")
   assert.equal(paid.gapCover.unclaimedGap, "0.00")
   assert.equal(paid.gapCover.payments.length, 5)
+  assert.equal(paid.inventory, undefined)
 })
 
 test("confirm fraction at $200 locks 0.05 ownership and pays 2.50 gap", () => {
@@ -60,6 +61,8 @@ test("confirm fraction at $200 locks 0.05 ownership and pays 2.50 gap", () => {
   assert.equal(paid.ownership.underlyingShareEquivalent, "0.05")
   assert.equal(paid.ownership.aureusSharePrice, "200.00")
   assert.equal(paid.gapCover.totalPaid, "2.50")
+  assert.equal(paid.inventory.remainingUnderlying, "99999.95")
+  assert.equal(paid.inventory.soldUnderlying, "0.05")
 })
 
 test("duplicate confirm is idempotent and does not create a second gap pass", () => {
@@ -146,6 +149,25 @@ test("admin pending insert is PENDING_PAYMENT and confirm rebuilds from that row
   assert.equal(paid.status, "PAID")
   assert.equal(paid.gapCover.totalPaid, "25.00")
   assert.equal(paid.id, row.id)
+})
+
+test("fraction confirm refuses when remaining inventory is sold through", () => {
+  assert.throws(
+    () =>
+      confirmCommercePayment({
+        order: createPendingFractionOrder({
+          orderId: "FRAC-SOLD",
+          userId: "9",
+          quantity: 1,
+          aureusSharePrice: "200.00",
+          aureusPhase: 11,
+          remainingUnderlying: "0.04",
+        }),
+        paymentId: "PAY-SOLD",
+        members: chain,
+      }),
+    /exceeds remaining underlying/
+  )
 })
 
 test("admin pending fraction insert rebuilds from the stored Ubuntu row", () => {

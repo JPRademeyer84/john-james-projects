@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { quoteCard } from "../src/lib/cardEconomics.mjs"
-import { phaseAvailability, quoteFractions } from "../src/lib/fractionEngine.mjs"
+import { consumeUnderlyingInventory, phaseAvailability, quoteFractions } from "../src/lib/fractionEngine.mjs"
 
 test("133 plastic card $100: cost 55, gap 25, BLP 5, gross 15", () => {
   const quote = quoteCard("CARD_PLASTIC", 1)
@@ -47,6 +47,31 @@ test("137 inventory limit: 0.25 remaining at $200 rejects more than $50", () => 
   assert.equal(ok.total, "50.00")
   assert.throws(
     () => quoteFractions({ quantity: 6, aureusSharePrice: "200.00", remainingUnderlying: "0.25" }),
+    /exceeds remaining underlying/
+  )
+})
+
+test("fraction confirm consumes 0.05 remaining and refuses when sold through", () => {
+  const ok = consumeUnderlyingInventory({
+    remainingUnderlying: "100000.00",
+    soldUnderlying: "0",
+    underlyingShareEquivalent: "0.05",
+  })
+  assert.equal(ok.remainingUnderlying, "99999.95")
+  assert.equal(ok.soldUnderlying, "0.05")
+  const last = consumeUnderlyingInventory({
+    remainingUnderlying: "0.05",
+    soldUnderlying: "99999.95",
+    underlyingShareEquivalent: "0.05",
+  })
+  assert.equal(last.remainingUnderlying, "0.00")
+  assert.throws(
+    () =>
+      consumeUnderlyingInventory({
+        remainingUnderlying: "0.04",
+        soldUnderlying: "99999.96",
+        underlyingShareEquivalent: "0.05",
+      }),
     /exceeds remaining underlying/
   )
 })

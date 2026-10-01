@@ -1,5 +1,5 @@
 import { quoteCard } from "./cardEconomics.mjs"
-import { quoteFractions } from "./fractionEngine.mjs"
+import { consumeUnderlyingInventory, quoteFractions } from "./fractionEngine.mjs"
 import { processGapCover } from "./gapCover.mjs"
 import { creditConfirmVolume } from "./volumeEngine.mjs"
 
@@ -191,6 +191,11 @@ export function confirmCommercePayment({
       aureusSharePrice: order.aureusSharePrice,
       underlyingShareEquivalent: order.underlyingShareEquivalent,
     }
+    confirmed.inventory = consumeUnderlyingInventory({
+      remainingUnderlying: order.remainingUnderlying,
+      soldUnderlying: order.soldUnderlying || "0",
+      underlyingShareEquivalent: order.underlyingShareEquivalent,
+    })
   }
 
   return confirmed
