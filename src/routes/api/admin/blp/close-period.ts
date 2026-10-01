@@ -86,6 +86,7 @@ export const Route = createFileRoute("/api/admin/blp/close-period")({
             period: result,
             persisted: true,
             idempotent: Boolean(persisted.idempotent),
+            monthlyVolumeReset: Boolean(persisted.monthlyVolumeReset),
           })
         } catch (err) {
           return Response.json({ ok: false, error: err instanceof Error ? err.message : "Persist failed" }, { status: 500 })

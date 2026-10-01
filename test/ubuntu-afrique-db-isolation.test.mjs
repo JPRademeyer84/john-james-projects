@@ -95,6 +95,7 @@ assert.match(blpClose, /distributeBlpPeriod/, "BLP close uses the shared BLP eng
 assert.match(blpClose, /loadBlpMembers/, "BLP members load from Ubuntu ranks and monthly volume")
 assert.match(blpClose, /taken from the open Ubuntu BLP period/, "close rejects client-supplied BLP sales")
 assert.match(blpClose, /commissionable_sales/, "close distributes from stored period sales")
+assert.match(blpClose, /monthlyVolumeReset/, "close reports monthly team QV reset")
 
 const schema6 = readFileSync(new URL("../supabase/ubuntu-only/0006_ua_blp_contributions.sql", import.meta.url), "utf8")
 assert.match(schema6, /NEVER run this on Aureus production/, "0006 refuses Aureus")
@@ -107,7 +108,17 @@ assert.doesNotMatch(persistVolume, /fgubaqoftdeefcakejwu/, "volume persist never
 
 const persistBlp = readFileSync(new URL("../src/lib/persistBlp.server.ts", import.meta.url), "utf8")
 assert.match(persistBlp, /entry_type: "BLP"/, "BLP posts to the Ubuntu wallet ledger")
+assert.match(persistBlp, /monthly_team_qv: "0.00"/, "BLP close resets monthly team QV after payout")
+assert.match(persistBlp, /monthlyVolumeReset/, "BLP close reports the monthly QV reset")
 assert.doesNotMatch(persistBlp, /fgubaqoftdeefcakejwu/, "BLP persist never targets Aureus")
+assert.ok(
+  persistBlp.indexOf('monthly_team_qv: "0.00"') > persistBlp.indexOf("ua_blp_transactions"),
+  "monthly QV reset happens after BLP payouts are written"
+)
+assert.ok(
+  persistBlp.indexOf('status: "CLOSED"') > persistBlp.indexOf('monthly_team_qv: "0.00"'),
+  "period is marked CLOSED only after monthly QV reset"
+)
 
 const ubuntuServer = readFileSync(new URL("../src/lib/ubuntuServer.server.ts", import.meta.url), "utf8")
 assert.match(ubuntuServer, /Aureus production/, "commission API refuses Aureus writes")

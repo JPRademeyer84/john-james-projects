@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { blpContribution, distributeBlpPeriod, isBlpQualified } from "../src/lib/blpEngine.mjs"
+import { resetMonthlyTeamQv } from "../src/lib/volumeEngine.mjs"
 
 test("BLP contribution on $100 is 5.00 split 1.50/1.50/1.00/1.00", () => {
   const row = blpContribution("100.00")
@@ -37,4 +38,22 @@ test("ASM pool splits by volume x weight; empty ranks stay unclaimed with Ubuntu
   assert.equal(result.unclaimed.SSM, "1.00")
   assert.equal(result.unclaimed.VP, "1.00")
   assert.equal(result.unclaimedTotal, "3.50")
+})
+
+test("after BLP close, monthly team QV resets so last month cannot qualify next month", () => {
+  const closed = resetMonthlyTeamQv([
+    { userId: "a1", rank: "ASM", qualifiedMonthlyVolume: "600.00" },
+    { userId: "v1", rank: "VP", qualifiedMonthlyVolume: "30000.00" },
+  ])
+  assert.equal(closed[0].qualifiedMonthlyVolume, "0.00")
+  assert.equal(closed[1].qualifiedMonthlyVolume, "0.00")
+  assert.equal(isBlpQualified("ASM", closed[0].qualifiedMonthlyVolume), false)
+  assert.equal(isBlpQualified("VP", closed[1].qualifiedMonthlyVolume), false)
+  const nextMonth = distributeBlpPeriod({
+    periodId: "2026-11",
+    commissionableSales: "100.00",
+    members: closed,
+  })
+  assert.equal(nextMonth.totalPaid, "0.00")
+  assert.equal(nextMonth.unclaimedTotal, "5.00")
 })

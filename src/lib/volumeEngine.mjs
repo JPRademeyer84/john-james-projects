@@ -55,6 +55,17 @@ export function creditConfirmVolume({ order, uplineUserIds = [], now = new Date(
   }
 }
 
+export function resetMonthlyTeamQv(members) {
+  if (!Array.isArray(members)) {
+    throw new Error("members must be an array")
+  }
+  return members.map((member) => ({
+    ...member,
+    qualifiedMonthlyVolume: "0.00",
+    monthlyTeamQv: "0.00",
+  }))
+}
+
 export function sumBlpAccruals(accruals) {
   if (!Array.isArray(accruals)) {
     throw new Error("accruals must be an array")

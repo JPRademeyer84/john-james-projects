@@ -68,11 +68,20 @@ export async function persistBlpPeriod(
     }
   }
 
+  const { error: resetError } = await ubuntu
+    .from("ua_team_volume")
+    .update({
+      monthly_team_qv: "0.00",
+      updated_at: new Date().toISOString(),
+    })
+    .gt("monthly_team_qv", 0)
+  if (resetError) throw new Error(resetError.message)
+
   const { error: closeError } = await ubuntu
     .from("ua_blp_periods")
     .update({ status: "CLOSED" })
     .eq("id", result.periodId)
   if (closeError) throw new Error(closeError.message)
 
-  return { idempotent: false, unclaimedTotal: result.unclaimedTotal }
+  return { idempotent: false, unclaimedTotal: result.unclaimedTotal, monthlyVolumeReset: true }
 }
