@@ -170,6 +170,34 @@ test("fraction confirm refuses when remaining inventory is sold through", () => 
   )
 })
 
+test("admin fraction create from live phase 10 / remaining 100000 locks 0.10 and refuses sold-through", () => {
+  const pending = createPendingFractionOrder({
+    orderId: "33333333-3333-3333-3333-333333333333",
+    userId: "9",
+    quantity: 1,
+    aureusSharePrice: "100.00",
+    aureusPhase: 10,
+    remainingUnderlying: "100000",
+  })
+  assert.equal(pending.status, "PENDING_PAYMENT")
+  assert.equal(pending.aureusSharePrice, "100.00")
+  assert.equal(pending.aureusPhase, 10)
+  assert.equal(pending.underlyingShareEquivalent, "0.10")
+  assert.equal(pendingFractionInsert(pending).transaction_status, "PENDING_PAYMENT")
+  assert.throws(
+    () =>
+      createPendingFractionOrder({
+        orderId: "44444444-4444-4444-4444-444444444444",
+        userId: "9",
+        quantity: 1,
+        aureusSharePrice: "100.00",
+        aureusPhase: 10,
+        remainingUnderlying: "0",
+      }),
+    /exceeds remaining underlying/
+  )
+})
+
 test("admin pending fraction insert rebuilds from the stored Ubuntu row", () => {
   const pending = createPendingFractionOrder({
     orderId: "22222222-2222-2222-2222-222222222222",

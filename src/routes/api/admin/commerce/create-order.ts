@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createPendingCardOrder, createPendingFractionOrder } from "../../../../lib/commerceOrders.mjs"
 import { persistPendingCardOrder, persistPendingFractionOrder } from "../../../../lib/persistPending.server"
-import { getUbuntuServerClient } from "../../../../lib/ubuntuServer.server"
+import { getUbuntuServerClient, loadActiveAureusPhase, loadUnderlyingInventory } from "../../../../lib/ubuntuServer.server"
 
 function authorizeCreate(request: Request, body: Record<string, unknown>) {
   const expected = String(process.env.UA_COMMERCE_CONFIRM_SECRET || "")
@@ -64,13 +64,35 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
             })
           }
 
+          if (body.remainingUnderlying != null && String(body.remainingUnderlying).trim() !== "") {
+            return Response.json({
+              ok: false,
+              error: "remainingUnderlying is taken from Ubuntu inventory, not the client",
+              checkoutEnabled: false,
+            }, { status: 400 })
+          }
+          if (
+            (body.aureusSharePrice != null && String(body.aureusSharePrice).trim() !== "") ||
+            (body.aureusPhase != null && String(body.aureusPhase).trim() !== "")
+          ) {
+            return Response.json({
+              ok: false,
+              error: "aureusSharePrice and aureusPhase are taken from Ubuntu ua_aureus_phases, not the client",
+              checkoutEnabled: false,
+            }, { status: 400 })
+          }
+
+          const [inventory, phase] = await Promise.all([
+            loadUnderlyingInventory(ubuntu),
+            loadActiveAureusPhase(ubuntu),
+          ])
           const order = createPendingFractionOrder({
             orderId: String(body.orderId || crypto.randomUUID()),
             userId: String(body.userId || ""),
             quantity: Number(body.quantity || 1),
-            aureusSharePrice: String(body.aureusSharePrice || "100.00"),
-            aureusPhase: Number(body.aureusPhase || 10),
-            remainingUnderlying: body.remainingUnderlying ? String(body.remainingUnderlying) : undefined,
+            aureusSharePrice: phase.aureusSharePrice,
+            aureusPhase: phase.phase,
+            remainingUnderlying: inventory.remainingUnderlying,
             sponsorId: String(body.sponsorId || ""),
           })
           if (!order.userId) {
@@ -80,12 +102,20 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
           return Response.json({
             ok: true,
             order,
+            inventory,
+            phase,
             persisted: true,
             idempotent: Boolean(persisted.idempotent),
             checkoutEnabled: false,
           })
         } catch (err) {
-          return Response.json({ ok: false, error: err instanceof Error ? err.message : "Order create failed" }, { status: 400 })
+          const message = err instanceof Error ? err.message : "Order create failed"
+          const soldThrough = message.includes("exceeds remaining underlying")
+          return Response.json({
+            ok: false,
+            error: message,
+            checkoutEnabled: false,
+          }, { status: soldThrough ? 409 : 400 })
         }
       },
     },

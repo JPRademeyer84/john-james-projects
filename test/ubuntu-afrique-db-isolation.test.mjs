@@ -90,6 +90,12 @@ assert.match(createOrder, /Client-supplied rank chains are rejected/, "admin ord
 assert.match(createOrder, /persistPendingCardOrder/, "admin create inserts ua_card_orders")
 assert.match(createOrder, /persistPendingFractionOrder/, "admin create inserts ua_fraction_transactions")
 assert.match(createOrder, /PENDING_PAYMENT|createPendingCardOrder/, "admin create starts as pending")
+assert.match(createOrder, /loadActiveAureusPhase/, "admin fraction create reads live Ubuntu phase")
+assert.match(createOrder, /loadUnderlyingInventory/, "admin fraction create reads live Ubuntu remaining")
+assert.match(createOrder, /taken from Ubuntu inventory/, "admin fraction create rejects client remaining")
+assert.match(createOrder, /taken from Ubuntu ua_aureus_phases/, "admin fraction create rejects client phase price")
+assert.match(createOrder, /checkoutEnabled: false/, "admin create keeps checkout closed")
+assert.doesNotMatch(createOrder, /body\.aureusSharePrice \|\| "100\.00"/, "admin create does not default a client phase price")
 assert.doesNotMatch(createOrder, /fgubaqoftdeefcakejwu/, "admin create never targets Aureus")
 
 const confirmPay = readFileSync(new URL("../src/routes/api/admin/commerce/confirm-payment.ts", import.meta.url), "utf8")
