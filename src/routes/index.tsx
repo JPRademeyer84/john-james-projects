@@ -131,9 +131,8 @@ function Hero() {
             <span className="block text-shimmer">Ubuntu Afrique.</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg text-muted-foreground">
-            A limited fractional share offering — 500,000 shares at just{" "}
-            <span className="text-foreground font-semibold">R180 each</span>. Backed by a
-            rewarding USDT affiliate program.
+            Ubuntu Afrique on the existing Aureus foundation: Corporate Differential Gap Cover,
+            then Cards, $10 Fractions, Marketplace, and NFT records. Fraction purchase is Coming Soon.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <a
@@ -158,9 +157,9 @@ function Hero() {
           </div>
 
           <div className="mt-10 grid grid-cols-3 gap-6 border-t border-border pt-8">
-            <Stat value="R180" label="Per Share" />
-            <Stat value="500k" label="Shares Available" />
-            <Stat value="30" label="Days Only" />
+            <Stat value="$10" label="Fraction Unit" />
+            <Stat value="100k" label="Underlying Allocation" />
+            <Stat value="SSA–VP" label="One Rank Engine" />
           </div>
 
         </div>
@@ -178,17 +177,17 @@ function Hero() {
             </div>
 
             <div className="mt-8 space-y-6">
-              <SnapshotRow label="Total Raise" value="R90,000,000" />
-              <SnapshotRow label="Cost Price" value="R900 / share" muted />
-              <SnapshotRow label="Selling Price" value="R180 / share" highlight />
-              <SnapshotRow label="Fractional Shares" value="500,000" />
-              <SnapshotRow label="Window" value="30 Days" />
+              <SnapshotRow label="Underlying Allocation" value="100,000 shares" />
+              <SnapshotRow label="Phase 10 Basis" value="$100 / full share" muted />
+              <SnapshotRow label="Fraction Price" value="$10" highlight />
+              <SnapshotRow label="Original Liability" value="$10,000,000" />
+              <SnapshotRow label="Commerce modules" value="Coming Soon" />
             </div>
 
             <div className="mt-8 rounded-xl bg-gold/10 p-5 ring-1 ring-gold/20">
               <p className="text-sm text-gold">
-                5× fractional split — a R900 share made accessible at R180 through
-                fractional ownership.
+                $10 Fractions convert against the current Aureus phase. Historical ownership
+                does not recalculate when the phase moves.
               </p>
             </div>
           </div>
@@ -253,25 +252,25 @@ function OfferingSection() {
         <div className="mt-16 grid gap-6 md:grid-cols-3">
           <OfferingCard
             step="01"
-            title="Cost Price"
-            equation="100,000 × $50"
-            result="$5,000,000"
-            note="Original share valuation forming the underlying pool."
+            title="Allocation Basis"
+            equation="100,000 × $100"
+            result="$10,000,000"
+            note="Original Ubuntu Afrique liability at Phase 10. It does not rise when Aureus phases up."
           />
           <OfferingCard
             step="02"
-            title="Fractional Split"
-            equation="$5,000,000 ÷ $10"
-            result="500,000 Shares"
-            note="Every share fractionalised so anyone can participate."
+            title="Fixed Fraction"
+            equation="Current Aureus price ÷ $10"
+            result="$10 Unit"
+            note="Fraction price stays $10. Phase price only changes how much of a full share $10 buys."
             highlight
           />
           <OfferingCard
             step="03"
-            title="Selling Window"
-            equation="Limited Access"
-            result="30 Days Only"
-            note="One offering. One window. No extensions."
+            title="Later Modules"
+            equation="Cards · Marketplace · NFT"
+            result="Coming Soon"
+            note="NFT production trading stays off until all 1,400,000 Aureus shares are sold."
           />
         </div>
       </div>
@@ -328,8 +327,8 @@ function AffiliateSection() {
               <span className="block text-gold">Growing the Network.</span>
             </h2>
             <p className="mt-6 text-muted-foreground">
-              A three-tier compensation model paid in USDT and shares. Built to reward
-              referral, consistency and top performance.
+              One Corporate Rank engine and one Gap Cover engine. Entitlements are maxima,
+              compress when ranks are missing, and never invent a second plan.
             </p>
             <div className="mt-8 flex items-center gap-3 rounded-xl border border-gold/30 bg-gold/5 p-4">
               <Coins className="h-5 w-5 text-gold" />
@@ -343,25 +342,24 @@ function AffiliateSection() {
           <div className="space-y-4">
             <AffiliateCard
               icon={Users}
-              tag="First Level"
-              title="Direct Referral"
+              tag="SSA"
+              title="Shares Sales Associate"
               percent="10%"
-              subPercent="+ 5%"
-              description="10% in USDT plus 5% in share purchases on every first-level referral."
+              description="Entry entitlement. Qualifying volume and activation are set by management."
             />
             <AffiliateCard
               icon={Trophy}
-              tag="Monthly"
-              title="Top Affiliate Bonus"
-              percent="15%"
-              description="Awarded monthly to the top-performing affiliate across the network."
+              tag="ASM–SSM"
+              title="Compressed Gap"
+              percent="16–23%"
+              description="ASM 16%, BSM 20%, SSM 23%. Missing ranks compress. Unclaimed gap is not redistributed."
             />
             <AffiliateCard
               icon={TrendingUp}
-              tag="Daily"
-              title="Performance Pool"
-              percent="5%"
-              description="A daily performance pool distributed to qualifying affiliates."
+              tag="VP"
+              title="Vice President"
+              percent="25%"
+              description="Maximum standard Gap Cover. Cards, Fractions, Marketplace, and NFT: Coming Soon."
             />
           </div>
         </div>
@@ -415,7 +413,7 @@ function CTASection() {
           Limited Window
         </span>
         <h2 className="mt-4 font-display text-4xl font-bold md:text-6xl">
-          30 Days. 500,000 Shares.
+          100,000 Shares. $10 Fractions.
           <span className="block text-gold">One Opportunity.</span>
         </h2>
         <p className="mx-auto mt-6 max-w-xl text-muted-foreground">
@@ -568,7 +566,7 @@ function DividendSection() {
                   <span className="text-foreground font-semibold">~$12,480,000</span> in projected annual dividends.
                 </p>
                 <p>
-                  Fractionalised across 500,000 shares at $10 each:
+                  Fractionalised from 100,000 underlying shares at a $10 unit:
                 </p>
               </div>
               <div className="mt-6 rounded-xl bg-background/40 p-6 text-center">
@@ -646,7 +644,7 @@ const MONTHS = 12;
 const OPEX_RATIO = 0.5; // 50% opex / tax / refinery
 const JJ_SHARES = 100_000;
 const TOTAL_SHARES = 1_400_000;
-const FRACTIONAL_SHARES = 500_000;
+const FRACTIONAL_SHARES = 1_000_000;
 
 function computeScenario(s: Scenario) {
   const annualKg = s.kgPerDay * DAYS_PER_MONTH * MONTHS * s.plants;

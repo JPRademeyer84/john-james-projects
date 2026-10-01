@@ -38,9 +38,38 @@ assert.doesNotMatch(dashboard, /project_id/, "dashboard does not query Aureus pr
 const uaLogin = readFileSync(new URL("../src/routes/api/ua-login.ts", import.meta.url), "utf8")
 assert.match(uaLogin, /initiate-login/, "Ubuntu login proxies official Aureus bcrypt login")
 assert.doesNotMatch(uaLogin, /signInWithPassword/, "login proxy does not use Supabase Auth password grant")
+assert.doesNotMatch(uaLogin, /createClient/, "login admin lookup uses Aureus REST headers, not supabase-js JWT Bearer")
+
+const uaMe = readFileSync(new URL("../src/routes/api/ua-me.ts", import.meta.url), "utf8")
+assert.match(uaMe, /aureusRestMaybeSingle/, "ua-me loads Aureus profile through REST apikey headers")
+assert.doesNotMatch(uaMe, /createClient/, "ua-me does not use supabase-js against sb_secret keys")
+assert.match(uaMe, /warning/, "ua-me keeps the session usable if Aureus profile fetch fails")
+
+const aureusAdmin = readFileSync(new URL("../src/lib/aureusAdminRest.server.ts", import.meta.url), "utf8")
+assert.match(aureusAdmin, /charCodeAt/, "server rejects masked non-ASCII Aureus secrets")
+assert.match(aureusAdmin, /apikey/, "Aureus REST sends apikey header")
 
 const affiliate = readFileSync(new URL("../src/routes/affiliate/index.tsx", import.meta.url), "utf8")
 assert.match(affiliate, /ua_users/, "affiliate reads Ubuntu users")
 assert.doesNotMatch(affiliate, /project_id/, "affiliate does not query Aureus project_id")
+assert.match(affiliate, /SSA/, "affiliate shows corporate ranks")
+assert.doesNotMatch(affiliate, /10% USDT/, "legacy 10% USDT copy removed")
+assert.doesNotMatch(affiliate, /Daily Pool/, "legacy daily pool copy removed")
+
+const schema = readFileSync(new URL("../supabase/ubuntu-only/0003_ua_gap_cover_core.sql", import.meta.url), "utf8")
+assert.match(schema, /NEVER run this on Aureus production/, "0003 refuses Aureus")
+assert.match(schema, /ua_commission_transactions/, "commission ledger exists")
+assert.match(schema, /nft_marketplace_enabled/, "NFT flag exists and defaults off in settings seed")
+
+const invest = readFileSync(new URL("../src/routes/dashboard/invest.tsx", import.meta.url), "utf8")
+assert.match(invest, /Coming Soon/, "fraction purchase is not open")
+assert.doesNotMatch(invest, /\/api\/invest\/purchase/, "no fake invest purchase path")
+
+const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
+assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")
+assert.match(processApi, /getUbuntuServerClient/, "commission writes use the Ubuntu server client")
+
+const ubuntuServer = readFileSync(new URL("../src/lib/ubuntuServer.server.ts", import.meta.url), "utf8")
+assert.match(ubuntuServer, /Aureus production/, "commission API refuses Aureus writes")
 
 console.log("ubuntu-afrique-db-isolation.test.mjs: OK")

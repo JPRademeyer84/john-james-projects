@@ -129,7 +129,11 @@ export const auth = {
           }
         }
       }
-      localStorage.removeItem("ua_session")
+      if (res.status === 401) {
+        localStorage.removeItem("ua_session")
+      } else {
+        throw new Error("Ubuntu session check failed. Refresh the page and sign in again.")
+      }
     }
     const { data } = await ubuntu.auth.getUser()
     return { user: data.user, identitySource: "ubuntu" as const }

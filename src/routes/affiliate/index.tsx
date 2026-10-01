@@ -244,28 +244,34 @@ function AffiliatePage() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-gold/30 bg-gold/5 p-8">
-          <h2 className="font-display text-xl font-semibold mb-4">Commission Structure</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg bg-background/60 p-4">
-              <p className="text-sm text-muted-foreground">Direct Referral</p>
-              <p className="mt-1 font-display text-2xl font-bold text-gold">10% USDT</p>
-              <p className="text-xs text-muted-foreground">+ 5% in shares</p>
-            </div>
-            <div className="rounded-lg bg-background/60 p-4">
-              <p className="text-sm text-muted-foreground">Top Monthly</p>
-              <p className="mt-1 font-display text-2xl font-bold text-gold">15%</p>
-              <p className="text-xs text-muted-foreground">Best performer</p>
-            </div>
-            <div className="rounded-lg bg-background/60 p-4">
-              <p className="text-sm text-muted-foreground">Daily Pool</p>
-              <p className="mt-1 font-display text-2xl font-bold text-gold">5%</p>
-              <p className="text-xs text-muted-foreground">Performance based</p>
-            </div>
+          <h2 className="font-display text-xl font-semibold mb-4">Corporate Differential Gap Cover</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            One rank engine. Percentages are maximum entitlement, not stacked add-ons. Missing ranks compress. Unclaimed gap stays with Ubuntu Afrique.
+          </p>
+          <div className="grid gap-4 md:grid-cols-5">
+            <RankCard code="SSA" title="Shares Sales Associate" percent="10%" />
+            <RankCard code="ASM" title="Associate Sales Manager" percent="16%" />
+            <RankCard code="BSM" title="Business Sales Manager" percent="20%" />
+            <RankCard code="SSM" title="Senior Sales Manager" percent="23%" />
+            <RankCard code="VP" title="Vice President" percent="25%" />
           </div>
+          <p className="mt-6 text-xs text-muted-foreground">
+            Cards, Fractional Shares, Marketplace, and NFT trading: Coming Soon. NFT production trading stays off until all 1,400,000 Aureus shares are sold.
+          </p>
         </div>
       </main>
     </div>
   );
+}
+
+function RankCard({ code, title, percent }: { code: string; title: string; percent: string }) {
+  return (
+    <div className="rounded-lg bg-background/60 p-4">
+      <p className="text-xs font-semibold uppercase tracking-widest text-gold">{code}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{title}</p>
+      <p className="mt-2 font-display text-2xl font-bold text-gold">{percent}</p>
+    </div>
+  )
 }
 
 function StatCard({ icon: Icon, label, value, subtext, highlight }: {

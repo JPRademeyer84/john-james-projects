@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { createClient } from "@supabase/supabase-js"
 import { signUaSession } from "../../lib/uaSession.server"
+import { aureusRestMaybeSingle } from "../../lib/aureusAdminRest.server"
 
 const AUREUS_LOGIN_URLS = [
   "https://www.aureus.africa/api/initiate-login",
@@ -49,17 +49,15 @@ export const Route = createFileRoute("/api/ua-login")({
         const user = loginJson.user
         let isAdmin = false
         let role = ""
-        const service = process.env.AUREUS_SERVICE_ROLE_KEY || ""
-        const aureusUrl = process.env.VITE_AUREUS_SUPABASE_URL || "https://fgubaqoftdeefcakejwu.supabase.co"
-        if (service && !service.includes("not-configured")) {
-          const admin = createClient(aureusUrl, service, { auth: { persistSession: false, autoRefreshToken: false } })
-          const { data } = await admin
-            .from("users")
-            .select("is_admin, role")
-            .eq("id", user.id)
-            .maybeSingle()
+        try {
+          const { data } = await aureusRestMaybeSingle<{ is_admin?: boolean; role?: string }>(
+            `users?id=eq.${Number(user.id)}&select=is_admin,role`
+          )
           isAdmin = Boolean(data?.is_admin) || String(data?.role || "").toLowerCase() === "admin" || String(data?.role || "").toLowerCase() === "super_admin"
           role = String(data?.role || "")
+        } catch {
+          isAdmin = false
+          role = ""
         }
 
         const token = signUaSession({ aureusUserId: Number(user.id), email: String(user.email) })
