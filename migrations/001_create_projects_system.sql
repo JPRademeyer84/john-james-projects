@@ -1,9 +1,12 @@
+-- DO NOT APPLY TO AUREUS PRODUCTION (fgubaqoftdeefcakejwu).
+-- This script mutates shared Aureus tables (projects / user_projects).
+-- Ubuntu Afrique writes only to its own database. See supabase/ubuntu-only/.
+--
 -- ============================================================
 -- MIGRATION 001: Multi-Project Platform Architecture
 -- ============================================================
--- PURPOSE: Add project isolation without breaking existing Aureus.africa
--- STATUS: REVIEW ONLY - DO NOT EXECUTE ON LIVE DATABASE YET
--- RISK LEVEL: LOW (additive only, no deletions or modifications)
+-- PURPOSE: HISTORICAL / UNSAFE FOR AUREUS. Kept for audit only.
+-- STATUS: REFUSED - DO NOT EXECUTE
 -- ============================================================
 
 -- ============================================================

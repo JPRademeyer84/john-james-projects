@@ -66,12 +66,12 @@ function RegisterPage() {
           <div className="text-center">
             <Link to="/" className="inline-flex items-center gap-2">
               <span className="grid h-12 w-12 place-items-center rounded-lg bg-gold-gradient text-primary-foreground font-display font-bold shadow-[var(--shadow-gold)]">
-                JJ
+                UA
               </span>
             </Link>
             <h1 className="mt-6 font-display text-3xl font-bold">Create Account</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Join the John James Projects offering
+              Join Ubuntu Afrique
             </p>
           </div>
 
@@ -152,6 +152,9 @@ function RegisterPage() {
               {loading ? "Creating account..." : "Create Account"}
             </button>
           </form>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            New Ubuntu Afrique accounts are stored on the Ubuntu Afrique database. Linking them into live Aureus Africa login is queued and is not written to Aureus until that identity step is explicitly approved.
+          </p>
         </div>
       </div>
     </div>

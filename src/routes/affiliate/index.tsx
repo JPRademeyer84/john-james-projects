@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Copy, Users, TrendingUp, DollarSign, ArrowLeft, CheckCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { supabase, PROJECT_ID } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 export const Route = createFileRoute("/affiliate/")({
   component: AffiliatePage,
@@ -51,11 +51,10 @@ function AffiliatePage() {
         return;
       }
 
-      // Get user's integer ID
       const { data: userIdData } = await supabase
-        .from('users')
-        .select('id, username, email')
-        .eq('auth_user_id', user.id)
+        .from("ua_users")
+        .select("id, username, email, sponsor_code")
+        .eq("auth_user_id", user.id)
         .single();
 
       if (!userIdData) {
@@ -65,21 +64,19 @@ function AffiliatePage() {
 
       const userId = userIdData.id;
 
-      // Get commissions for project_id = 2
       const { data: commissions } = await supabase
-        .from('commissions')
-        .select('amount, shares_bonus, type, status, created_at')
-        .eq('user_id', userId)
-        .eq('project_id', PROJECT_ID)
-        .order('created_at', { ascending: false });
+        .from("ua_commissions")
+        .select("amount, shares_bonus, type, status, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
-      const totalEarned = commissions?.reduce((sum, c) => sum + c.amount, 0) || 0;
-      const pending = commissions?.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0) || 0;
+      const totalEarned = commissions?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+      const pending = commissions?.filter((c) => c.status === "pending").reduce((sum, c) => sum + Number(c.amount), 0) || 0;
 
-      // For now, no referral system (referral_code doesn't exist)
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
       setData({
-        referral_code: 'N/A',
-        referral_link: `https://john-james-projects.vercel.app/auth/register`,
+        referral_code: userIdData.sponsor_code || userIdData.username || "N/A",
+        referral_link: `${origin}/auth/register?ref=${encodeURIComponent(userIdData.username || "")}`,
         stats: {
           direct_referrals: 0,
           total_team: 0,
@@ -135,7 +132,7 @@ function AffiliatePage() {
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold">Affiliate Dashboard</h1>
           <p className="mt-2 text-muted-foreground">
-            Earn 10% USDT + 5% shares on every referral
+            Corporate Differential Gap Cover — one rank engine, one wallet ledger
           </p>
         </div>
 
@@ -247,28 +244,34 @@ function AffiliatePage() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-gold/30 bg-gold/5 p-8">
-          <h2 className="font-display text-xl font-semibold mb-4">Commission Structure</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg bg-background/60 p-4">
-              <p className="text-sm text-muted-foreground">Direct Referral</p>
-              <p className="mt-1 font-display text-2xl font-bold text-gold">10% USDT</p>
-              <p className="text-xs text-muted-foreground">+ 5% in shares</p>
-            </div>
-            <div className="rounded-lg bg-background/60 p-4">
-              <p className="text-sm text-muted-foreground">Top Monthly</p>
-              <p className="mt-1 font-display text-2xl font-bold text-gold">15%</p>
-              <p className="text-xs text-muted-foreground">Best performer</p>
-            </div>
-            <div className="rounded-lg bg-background/60 p-4">
-              <p className="text-sm text-muted-foreground">Daily Pool</p>
-              <p className="mt-1 font-display text-2xl font-bold text-gold">5%</p>
-              <p className="text-xs text-muted-foreground">Performance based</p>
-            </div>
+          <h2 className="font-display text-xl font-semibold mb-4">Corporate Differential Gap Cover</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            One rank engine. Percentages are maximum entitlement, not stacked add-ons. Missing ranks compress. Unclaimed gap stays with Ubuntu Afrique.
+          </p>
+          <div className="grid gap-4 md:grid-cols-5">
+            <RankCard code="SSA" title="Shares Sales Associate" percent="10%" />
+            <RankCard code="ASM" title="Associate Sales Manager" percent="16%" />
+            <RankCard code="BSM" title="Business Sales Manager" percent="20%" />
+            <RankCard code="SSM" title="Senior Sales Manager" percent="23%" />
+            <RankCard code="VP" title="Vice President" percent="25%" />
           </div>
+          <p className="mt-6 text-xs text-muted-foreground">
+            Cards, Fractional Shares, Marketplace, and NFT trading: Coming Soon. NFT production trading stays off until all 1,400,000 Aureus shares are sold.
+          </p>
         </div>
       </main>
     </div>
   );
+}
+
+function RankCard({ code, title, percent }: { code: string; title: string; percent: string }) {
+  return (
+    <div className="rounded-lg bg-background/60 p-4">
+      <p className="text-xs font-semibold uppercase tracking-widest text-gold">{code}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{title}</p>
+      <p className="mt-2 font-display text-2xl font-bold text-gold">{percent}</p>
+    </div>
+  )
 }
 
 function StatCard({ icon: Icon, label, value, subtext, highlight }: {

@@ -1,13 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { TrendingUp, Users, Coins, ArrowRight } from "lucide-react";
-import { supabase, PROJECT_ID } from "../../lib/supabase";
+import { auth } from "../../lib/supabase";
+import {
+  isAureusAdmin,
+  loadUbuntuMemberByAuthId,
+} from "../../lib/aureusMember";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardPage,
 });
 
 interface DashboardData {
+  identitySource: "aureus" | "ubuntu";
+  isAdmin: boolean;
   user: {
     username: string;
     email: string;
@@ -39,60 +45,81 @@ function DashboardPage() {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await auth.signOut();
     localStorage.removeItem("auth_token");
     navigate({ to: "/" });
   };
 
   const fetchDashboardData = async () => {
     try {
-      // Get current user
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !user) {
+      const current = await auth.getCurrentUser();
+      if (!current.user) {
         navigate({ to: "/auth/login" });
         return;
       }
 
-      // Get user's integer ID from auth UUID
-      const { data: userIdData } = await supabase
-        .from('users')
-        .select('id, username, email')
-        .eq('auth_user_id', user.id)
-        .single();
+      if (current.identitySource === "aureus") {
+        const profile = current.profile
+        const ledger = current.ledger
+        if (!profile || !ledger) {
+          throw new Error("Aureus profile did not load. Sign in again.")
+        }
+        setData({
+          identitySource: "aureus",
+          isAdmin: isAureusAdmin(profile),
+          user: {
+            username: profile.username || "User",
+            email: profile.email || current.user.email || "",
+            referral_code: profile.username || "",
+          },
+          portfolio: {
+            total_shares: ledger.shares,
+            total_invested: ledger.invested,
+            current_value: ledger.invested,
+          },
+          commissions: {
+            total_earned: ledger.commissions,
+            pending: ledger.pending,
+            withdrawn: ledger.commissions - ledger.pending,
+          },
+          referrals: {
+            direct: 0,
+            total_team: 0,
+          },
+        });
+        return;
+      }
 
+      const userIdData = await loadUbuntuMemberByAuthId(current.user.id);
       if (!userIdData) {
         navigate({ to: "/auth/login" });
         return;
       }
 
-      const userId = userIdData.id;
+      const { ubuntu } = await import("../../lib/ubuntuDb");
+      const { data: investments } = await ubuntu
+        .from("ua_investments")
+        .select("amount, shares, status")
+        .eq("user_id", userIdData.id);
 
-      // Get investments for project_id = 2 only
-      const { data: investments } = await supabase
-        .from('investments')
-        .select('amount, shares, status')
-        .eq('user_id', userId)
-        .eq('project_id', PROJECT_ID);
+      const totalShares = investments?.reduce((sum, inv) => sum + (inv.status === "approved" ? Number(inv.shares) : 0), 0) || 0;
+      const totalInvested = investments?.reduce((sum, inv) => sum + (inv.status === "approved" ? Number(inv.amount) : 0), 0) || 0;
 
-      const totalShares = investments?.reduce((sum, inv) => sum + (inv.status === 'approved' ? inv.shares : 0), 0) || 0;
-      const totalInvested = investments?.reduce((sum, inv) => sum + (inv.status === 'approved' ? inv.amount : 0), 0) || 0;
-
-      // Get commissions for project_id = 2 only
-      const { data: commissions } = await supabase
-        .from('commissions')
-        .select('amount, status')
-        .eq('user_id', userId)
-        .eq('project_id', PROJECT_ID);
+      const { data: commissions } = await ubuntu
+        .from("ua_commissions")
+        .select("amount, status")
+        .eq("user_id", userIdData.id);
 
       const totalEarned = commissions?.reduce((sum, comm) => sum + comm.amount, 0) || 0;
       const pending = commissions?.filter(c => c.status === 'pending').reduce((sum, comm) => sum + comm.amount, 0) || 0;
 
       setData({
+        identitySource: "ubuntu",
+        isAdmin: false,
         user: {
-          username: userIdData.username || 'User',
-          email: userIdData.email || '',
-          referral_code: '', // No referral system yet
+          username: userIdData.username || "User",
+          email: userIdData.email || "",
+          referral_code: userIdData.pending_aureus_provision ? "Pending Aureus link" : "",
         },
         portfolio: {
           total_shares: totalShares,
@@ -138,16 +165,19 @@ function DashboardPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-md bg-gold-gradient text-primary-foreground font-display font-bold shadow-[var(--shadow-gold)]">
-              JJ
+              UA
             </span>
             <span className="font-display text-lg font-semibold tracking-tight text-gold">
-              John James Projects
+              Ubuntu Afrique
             </span>
           </div>
           <div className="flex items-center gap-6">
             <a href="/dashboard" className="text-sm font-medium text-gold">Dashboard</a>
             <a href="/dashboard/invest" className="text-sm text-muted-foreground hover:text-foreground">Invest</a>
             <a href="/affiliate" className="text-sm text-muted-foreground hover:text-foreground">Affiliate</a>
+            {data.isAdmin && (
+              <a href="/admin" className="text-sm text-muted-foreground hover:text-foreground">Admin</a>
+            )}
             <button onClick={handleSignOut} className="text-sm text-muted-foreground hover:text-foreground">Sign Out</button>
           </div>
         </div>
@@ -158,6 +188,7 @@ function DashboardPage() {
           <h1 className="font-display text-3xl font-bold">Dashboard</h1>
           <p className="mt-2 text-muted-foreground">
             Welcome back, {data.user.username}
+            {data.identitySource === "aureus" ? " — Aureus Africa profile (read only)" : " — Ubuntu Afrique account"}
           </p>
         </div>
 

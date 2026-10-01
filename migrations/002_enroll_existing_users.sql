@@ -1,9 +1,12 @@
+-- DO NOT APPLY TO AUREUS PRODUCTION (fgubaqoftdeefcakejwu).
+-- This script inserts into Aureus user_projects. Forbidden.
+-- Ubuntu Afrique writes only to its own database. See supabase/ubuntu-only/.
+--
 -- ============================================================
 -- MIGRATION 002: Auto-Enroll Existing Users
 -- ============================================================
--- PURPOSE: Give all existing Aureus users access to John James
--- STATUS: REVIEW ONLY - DO NOT EXECUTE ON LIVE DATABASE YET
--- RISK LEVEL: LOW (insert only, no updates or deletes)
+-- PURPOSE: HISTORICAL / UNSAFE FOR AUREUS. Kept for audit only.
+-- STATUS: REFUSED - DO NOT EXECUTE
 -- ============================================================
 
 -- ============================================================
