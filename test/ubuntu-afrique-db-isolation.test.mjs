@@ -61,8 +61,13 @@ assert.match(schema, /NEVER run this on Aureus production/, "0003 refuses Aureus
 assert.match(schema, /ua_commission_transactions/, "commission ledger exists")
 assert.match(schema, /nft_marketplace_enabled/, "NFT flag exists and defaults off in settings seed")
 
+const schema4 = readFileSync(new URL("../supabase/ubuntu-only/0004_ua_cards_fractions.sql", import.meta.url), "utf8")
+assert.match(schema4, /NEVER run this on Aureus production/, "0004 refuses Aureus")
+assert.match(schema4, /ua_card_orders/, "card orders table exists")
+assert.match(schema4, /ua_fraction_transactions/, "fraction transactions table exists")
+
 const invest = readFileSync(new URL("../src/routes/dashboard/invest.tsx", import.meta.url), "utf8")
-assert.match(invest, /Coming Soon/, "fraction purchase is not open")
+assert.match(invest, /checkout is not open/, "commerce checkout is not open")
 assert.doesNotMatch(invest, /\/api\/invest\/purchase/, "no fake invest purchase path")
 
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
