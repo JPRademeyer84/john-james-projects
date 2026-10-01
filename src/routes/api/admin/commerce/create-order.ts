@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createPendingCardOrder, createPendingFractionOrder } from "../../../../lib/commerceOrders.mjs"
 import { persistPendingCardOrder, persistPendingFractionOrder } from "../../../../lib/persistPending.server"
-import { getUbuntuServerClient, loadActiveAureusPhase, loadUnderlyingInventory } from "../../../../lib/ubuntuServer.server"
+import { getUbuntuServerClient, loadActiveAureusPhase, loadUbuntuUser, loadUnderlyingInventory } from "../../../../lib/ubuntuServer.server"
 
 function authorizeCreate(request: Request, body: Record<string, unknown>) {
   const expected = String(process.env.UA_COMMERCE_CONFIRM_SECRET || "")
@@ -42,18 +42,24 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
           return Response.json({ ok: false, error: "Ubuntu Afrique database is not configured" }, { status: 503 })
         }
 
+        let buyer
+        try {
+          buyer = await loadUbuntuUser(ubuntu, String(body.userId || ""))
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Ubuntu user not found"
+          const missing = message.includes("not found") || message.includes("ua_users.id")
+          return Response.json({ ok: false, error: message, checkoutEnabled: false }, { status: missing ? 404 : 400 })
+        }
+
         try {
           if (kind === "CARD") {
             const order = createPendingCardOrder({
               orderId: String(body.orderId || crypto.randomUUID()),
-              userId: String(body.userId || ""),
+              userId: buyer.userId,
               productType: String(body.productType || ""),
               quantity: Number(body.quantity || 1),
               sponsorId: String(body.sponsorId || ""),
             })
-            if (!order.userId) {
-              return Response.json({ ok: false, error: "userId is required" }, { status: 400 })
-            }
             const persisted = await persistPendingCardOrder(ubuntu, order)
             return Response.json({
               ok: true,
@@ -88,16 +94,13 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
           ])
           const order = createPendingFractionOrder({
             orderId: String(body.orderId || crypto.randomUUID()),
-            userId: String(body.userId || ""),
+            userId: buyer.userId,
             quantity: Number(body.quantity || 1),
             aureusSharePrice: phase.aureusSharePrice,
             aureusPhase: phase.phase,
             remainingUnderlying: inventory.remainingUnderlying,
             sponsorId: String(body.sponsorId || ""),
           })
-          if (!order.userId) {
-            return Response.json({ ok: false, error: "userId is required" }, { status: 400 })
-          }
           const persisted = await persistPendingFractionOrder(ubuntu, order)
           return Response.json({
             ok: true,
@@ -111,11 +114,12 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
         } catch (err) {
           const message = err instanceof Error ? err.message : "Order create failed"
           const soldThrough = message.includes("exceeds remaining underlying")
+          const missingUser = message.includes("Ubuntu user not found") || message.includes("ua_users.id")
           return Response.json({
             ok: false,
             error: message,
             checkoutEnabled: false,
-          }, { status: soldThrough ? 409 : 400 })
+          }, { status: soldThrough ? 409 : missingUser ? 404 : 400 })
         }
       },
     },

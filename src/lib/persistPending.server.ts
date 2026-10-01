@@ -3,6 +3,9 @@ import { pendingCardInsert, pendingFractionInsert } from "./commerceOrders.mjs"
 
 export async function persistPendingCardOrder(ubuntu: SupabaseClient, order: Record<string, unknown>) {
   const row = pendingCardInsert(order)
+  if (!Number.isInteger(row.user_id) || row.user_id <= 0) {
+    throw new Error("Ubuntu user not found")
+  }
   const { data: existing, error: existingError } = await ubuntu
     .from("ua_card_orders")
     .select("id, order_status")
@@ -21,6 +24,9 @@ export async function persistPendingCardOrder(ubuntu: SupabaseClient, order: Rec
 
 export async function persistPendingFractionOrder(ubuntu: SupabaseClient, order: Record<string, unknown>) {
   const row = pendingFractionInsert(order)
+  if (!Number.isInteger(row.buyer_id) || row.buyer_id <= 0) {
+    throw new Error("Ubuntu user not found")
+  }
   const { data: existing, error: existingError } = await ubuntu
     .from("ua_fraction_transactions")
     .select("id, transaction_status")

@@ -8,6 +8,7 @@ import {
   orderFromFractionRow,
   pendingCardInsert,
   pendingFractionInsert,
+  requireUbuntuUserId,
 } from "../src/lib/commerceOrders.mjs"
 import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
 
@@ -132,6 +133,23 @@ test("confirm fraction credits 10 QV and accrues 0.50 BLP; two sales sum on the 
   const summed = sumBlpAccruals([first.blpAccrual, second.blpAccrual])
   assert.equal(summed.commissionableSales, "110.00")
   assert.equal(summed.blpTotal, "5.50")
+})
+
+test("admin create requires a positive integer Ubuntu ua_users.id", () => {
+  assert.equal(requireUbuntuUserId("9"), 9)
+  assert.throws(() => requireUbuntuUserId(""), /ua_users\.id/)
+  assert.throws(() => requireUbuntuUserId("buyer"), /ua_users\.id/)
+  assert.throws(() => requireUbuntuUserId("0"), /ua_users\.id/)
+  assert.equal(pendingCardInsert(createPendingCardOrder({
+    orderId: "55555555-5555-5555-5555-555555555555",
+    userId: "9",
+    productType: "CARD_PLASTIC",
+  })).user_id, 9)
+  assert.equal(pendingCardInsert(createPendingCardOrder({
+    orderId: "66666666-6666-6666-6666-666666666666",
+    userId: "buyer",
+    productType: "CARD_PLASTIC",
+  })).user_id, null)
 })
 
 test("admin pending insert is PENDING_PAYMENT and confirm rebuilds from that row", () => {

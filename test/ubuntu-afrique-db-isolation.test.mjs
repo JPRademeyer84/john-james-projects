@@ -95,6 +95,8 @@ assert.match(createOrder, /loadUnderlyingInventory/, "admin fraction create read
 assert.match(createOrder, /taken from Ubuntu inventory/, "admin fraction create rejects client remaining")
 assert.match(createOrder, /taken from Ubuntu ua_aureus_phases/, "admin fraction create rejects client phase price")
 assert.match(createOrder, /checkoutEnabled: false/, "admin create keeps checkout closed")
+assert.match(createOrder, /loadUbuntuUser/, "admin create requires an existing Ubuntu ua_users.id")
+assert.match(createOrder, /Ubuntu user not found/, "missing Ubuntu user is refused")
 assert.doesNotMatch(createOrder, /body\.aureusSharePrice \|\| "100\.00"/, "admin create does not default a client phase price")
 assert.doesNotMatch(createOrder, /fgubaqoftdeefcakejwu/, "admin create never targets Aureus")
 
@@ -146,6 +148,8 @@ assert.match(ubuntuServerAfter, /loadUnderlyingInventory/, "Ubuntu inventory loa
 assert.match(ubuntuServerAfter, /ua_underlying_inventory/, "inventory loader reads Ubuntu remaining")
 assert.match(ubuntuServerAfter, /loadActiveAureusPhase/, "Ubuntu active phase loader exists")
 assert.match(ubuntuServerAfter, /ua_aureus_phases/, "phase loader reads Ubuntu ua_aureus_phases")
+assert.match(ubuntuServerAfter, /loadUbuntuUser/, "Ubuntu user loader exists")
+assert.match(ubuntuServerAfter, /from\("ua_users"\)/, "user loader reads Ubuntu ua_users")
 
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")
@@ -172,6 +176,7 @@ assert.match(schema6, /ua_blp_contributions/, "BLP contribution ledger exists")
 const persistPending = readFileSync(new URL("../src/lib/persistPending.server.ts", import.meta.url), "utf8")
 assert.match(persistPending, /ua_card_orders/, "pending persist writes Ubuntu card orders")
 assert.match(persistPending, /ua_fraction_transactions/, "pending persist writes Ubuntu fraction transactions")
+assert.match(persistPending, /Ubuntu user not found/, "pending persist refuses a missing Ubuntu user id")
 assert.doesNotMatch(persistPending, /fgubaqoftdeefcakejwu/, "pending persist never targets Aureus")
 
 const persistVolume = readFileSync(new URL("../src/lib/persistVolume.server.ts", import.meta.url), "utf8")

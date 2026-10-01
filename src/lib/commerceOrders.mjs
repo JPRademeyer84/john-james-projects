@@ -3,6 +3,14 @@ import { consumeUnderlyingInventory, quoteFractions } from "./fractionEngine.mjs
 import { processGapCover } from "./gapCover.mjs"
 import { creditConfirmVolume } from "./volumeEngine.mjs"
 
+export function requireUbuntuUserId(userId) {
+  const id = Number(userId)
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error("userId must be an existing Ubuntu ua_users.id")
+  }
+  return id
+}
+
 export function createPendingCardOrder({
   orderId,
   userId,
