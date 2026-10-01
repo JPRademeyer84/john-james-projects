@@ -69,6 +69,7 @@ assert.match(schema4, /ua_fraction_transactions/, "fraction transactions table e
 
 const invest = readFileSync(new URL("../src/routes/dashboard/invest.tsx", import.meta.url), "utf8")
 assert.match(invest, /checkout is not open/, "commerce checkout is not open")
+assert.doesNotMatch(invest, /aureusSharePrice:\s*"100.00"/, "invest quote does not send a client phase price")
 assert.doesNotMatch(invest, /\/api\/invest\/purchase/, "no fake invest purchase path")
 assert.doesNotMatch(invest, /\/api\/admin\/commerce\/confirm-payment/, "public invest page cannot confirm payment")
 assert.doesNotMatch(invest, /\/api\/cards\/order/, "public invest page cannot create card orders")
@@ -113,19 +114,32 @@ assert.doesNotMatch(persistInventory, /fgubaqoftdeefcakejwu/, "inventory persist
 
 const fractionQuote = readFileSync(new URL("../src/routes/api/fractions/quote.ts", import.meta.url), "utf8")
 assert.match(fractionQuote, /loadUnderlyingInventory/, "fraction quote reads live Ubuntu remaining")
+assert.match(fractionQuote, /loadActiveAureusPhase/, "fraction quote reads live Ubuntu phase price")
 assert.match(fractionQuote, /taken from Ubuntu inventory/, "fraction quote rejects client remaining")
+assert.match(fractionQuote, /taken from Ubuntu ua_aureus_phases/, "fraction quote rejects client phase price")
 assert.match(fractionQuote, /checkoutEnabled: false/, "fraction quote keeps checkout closed")
 assert.doesNotMatch(fractionQuote, /\.insert\(|\.update\(|\.delete\(/, "fraction quote does not write inventory")
 
 const fractionAvail = readFileSync(new URL("../src/routes/api/fractions/availability.ts", import.meta.url), "utf8")
 assert.match(fractionAvail, /loadUnderlyingInventory/, "fraction availability reads live Ubuntu remaining")
+assert.match(fractionAvail, /loadActiveAureusPhase/, "fraction availability reads live Ubuntu phase price")
 assert.match(fractionAvail, /taken from Ubuntu inventory/, "fraction availability rejects client remaining")
+assert.match(fractionAvail, /taken from Ubuntu ua_aureus_phases/, "fraction availability rejects client phase price")
 assert.match(fractionAvail, /checkoutEnabled: false/, "fraction availability keeps checkout closed")
 assert.doesNotMatch(fractionAvail, /\.insert\(|\.update\(|\.delete\(/, "fraction availability does not write inventory")
+
+const currentPhase = readFileSync(new URL("../src/routes/api/aureus/current-phase.ts", import.meta.url), "utf8")
+assert.match(currentPhase, /loadActiveAureusPhase/, "current-phase reads live Ubuntu ua_aureus_phases")
+assert.match(currentPhase, /loadUnderlyingInventory/, "current-phase includes live remaining")
+assert.match(currentPhase, /checkoutEnabled: false/, "current-phase keeps checkout closed")
+assert.doesNotMatch(currentPhase, /\.insert\(|\.update\(|\.delete\(/, "current-phase does not write Ubuntu")
+assert.doesNotMatch(currentPhase, /DEFAULT_PHASE/, "current-phase no longer hardcodes DEFAULT_PHASE")
 
 const ubuntuServerAfter = readFileSync(new URL("../src/lib/ubuntuServer.server.ts", import.meta.url), "utf8")
 assert.match(ubuntuServerAfter, /loadUnderlyingInventory/, "Ubuntu inventory loader exists")
 assert.match(ubuntuServerAfter, /ua_underlying_inventory/, "inventory loader reads Ubuntu remaining")
+assert.match(ubuntuServerAfter, /loadActiveAureusPhase/, "Ubuntu active phase loader exists")
+assert.match(ubuntuServerAfter, /ua_aureus_phases/, "phase loader reads Ubuntu ua_aureus_phases")
 
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")

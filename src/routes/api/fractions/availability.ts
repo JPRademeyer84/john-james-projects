@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { phaseAvailability } from "../../../lib/fractionEngine.mjs"
-import { getUbuntuServerClient, loadUnderlyingInventory } from "../../../lib/ubuntuServer.server"
+import { getUbuntuServerClient, loadActiveAureusPhase, loadUnderlyingInventory } from "../../../lib/ubuntuServer.server"
 
 export const Route = createFileRoute("/api/fractions/availability")({
   server: {
@@ -11,6 +11,13 @@ export const Route = createFileRoute("/api/fractions/availability")({
           return Response.json({
             ok: false,
             error: "remainingUnderlying is taken from Ubuntu inventory, not the client",
+            checkoutEnabled: false,
+          }, { status: 400 })
+        }
+        if (url.searchParams.get("aureusSharePrice") || url.searchParams.get("aureusPhase")) {
+          return Response.json({
+            ok: false,
+            error: "aureusSharePrice and aureusPhase are taken from Ubuntu ua_aureus_phases, not the client",
             checkoutEnabled: false,
           }, { status: 400 })
         }
@@ -25,13 +32,16 @@ export const Route = createFileRoute("/api/fractions/availability")({
           return Response.json({ ok: false, error: "Ubuntu Afrique database is not configured", checkoutEnabled: false }, { status: 503 })
         }
 
-        const price = url.searchParams.get("aureusSharePrice") || "100.00"
         try {
-          const inventory = await loadUnderlyingInventory(ubuntu)
+          const [inventory, phase] = await Promise.all([
+            loadUnderlyingInventory(ubuntu),
+            loadActiveAureusPhase(ubuntu),
+          ])
           return Response.json({
             ok: true,
-            availability: phaseAvailability(inventory.remainingUnderlying, price),
+            availability: phaseAvailability(inventory.remainingUnderlying, phase.aureusSharePrice),
             inventory,
+            phase,
             checkoutEnabled: false,
           })
         } catch (err) {

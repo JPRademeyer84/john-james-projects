@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { quoteFractions } from "../../../lib/fractionEngine.mjs"
-import { getUbuntuServerClient, loadUnderlyingInventory } from "../../../lib/ubuntuServer.server"
+import { getUbuntuServerClient, loadActiveAureusPhase, loadUnderlyingInventory } from "../../../lib/ubuntuServer.server"
 
 export const Route = createFileRoute("/api/fractions/quote")({
   server: {
@@ -11,6 +11,16 @@ export const Route = createFileRoute("/api/fractions/quote")({
           return Response.json({
             ok: false,
             error: "remainingUnderlying is taken from Ubuntu inventory, not the client",
+            checkoutEnabled: false,
+          }, { status: 400 })
+        }
+        if (
+          (body.aureusSharePrice != null && String(body.aureusSharePrice).trim() !== "") ||
+          (body.aureusPhase != null && String(body.aureusPhase).trim() !== "")
+        ) {
+          return Response.json({
+            ok: false,
+            error: "aureusSharePrice and aureusPhase are taken from Ubuntu ua_aureus_phases, not the client",
             checkoutEnabled: false,
           }, { status: 400 })
         }
@@ -26,17 +36,21 @@ export const Route = createFileRoute("/api/fractions/quote")({
         }
 
         try {
-          const inventory = await loadUnderlyingInventory(ubuntu)
+          const [inventory, phase] = await Promise.all([
+            loadUnderlyingInventory(ubuntu),
+            loadActiveAureusPhase(ubuntu),
+          ])
           const quote = quoteFractions({
             quantity: Number(body.quantity || 1),
-            aureusSharePrice: String(body.aureusSharePrice || "100.00"),
-            aureusPhase: Number(body.aureusPhase || 10),
+            aureusSharePrice: phase.aureusSharePrice,
+            aureusPhase: phase.phase,
             remainingUnderlying: inventory.remainingUnderlying,
           })
           return Response.json({
             ok: true,
             quote,
             inventory,
+            phase,
             checkoutEnabled: false,
           })
         } catch (err) {

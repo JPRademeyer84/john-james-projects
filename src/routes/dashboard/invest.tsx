@@ -26,7 +26,7 @@ function InvestPage() {
     fetch("/api/fractions/quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: fractionQty, aureusSharePrice: "100.00", aureusPhase: 10 }),
+      body: JSON.stringify({ quantity: fractionQty }),
     })
       .then((res) => res.json())
       .then((json) => {
@@ -36,7 +36,7 @@ function InvestPage() {
           setFractionError(json.error || "Quote failed");
           return;
         }
-        setFractionQuote(json.quote);
+        setFractionQuote({ ...json.quote, inventory: json.inventory, phase: json.phase });
       })
       .catch(() => {
         if (!cancelled) setFractionError("Quote unavailable");
@@ -83,7 +83,7 @@ function InvestPage() {
         <section className="mt-10 rounded-2xl border border-gold/30 bg-gold/5 p-6">
           <h2 className="font-display text-xl font-semibold">$10 Fractions</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Phase 10 default quote. Historical ownership will lock to the phase used at purchase. Checkout is not open.
+            Live Ubuntu phase and remaining inventory. Historical ownership will lock to the phase used at purchase. Checkout is not open.
           </p>
           <label className="mt-4 block text-sm font-medium">Quantity</label>
           <input
@@ -96,6 +96,8 @@ function InvestPage() {
           {fractionError && <p className="mt-3 text-sm text-red-400">{fractionError}</p>}
           {fractionQuote && (
             <div className="mt-4 grid gap-2 text-sm">
+              <p>Phase {fractionQuote.phase?.phase ?? fractionQuote.aureusPhase} at {fractionQuote.phase?.aureusSharePrice ?? fractionQuote.aureusSharePrice}</p>
+              <p>Remaining underlying {fractionQuote.inventory?.remainingUnderlying ?? fractionQuote.remainingUnderlying}</p>
               <p>Total {fractionQuote.total}</p>
               <p>Underlying equivalent {fractionQuote.underlyingShareEquivalent}</p>
               <p>Allocation component {fractionQuote.allocationComponent}</p>
