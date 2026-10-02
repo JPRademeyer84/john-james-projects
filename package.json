@@ -1,6 +1,6 @@
 {
   "name": "ubuntu-afrique",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "node --test test/ubuntu-afrique-db-isolation.test.mjs test/gap-cover-required.test.mjs test/cards-fractions-required.test.mjs test/commerce-pending-confirm.test.mjs test/blp-required.test.mjs"
+    "test": "node --test test/ubuntu-afrique-db-isolation.test.mjs test/gap-cover-required.test.mjs test/cards-fractions-required.test.mjs test/commerce-pending-confirm.test.mjs test/blp-required.test.mjs test/rank-qualification-required.test.mjs test/rank-progress-required.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

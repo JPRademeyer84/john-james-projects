@@ -70,6 +70,11 @@ function AdminPage() {
               <Row label="Role" value={profile.role || "admin"} />
               <Row label="Full name" value={profile.full_name || "-"} />
             </div>
+            <p>
+              <Link to="/admin/finance" className="text-gold hover:underline">
+                Finance (read-only)
+              </Link>
+            </p>
           </div>
         )}
       </main>
