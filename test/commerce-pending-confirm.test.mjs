@@ -11,11 +11,13 @@ import {
   requireUbuntuUserId,
   assertUbuntuUserActive,
   applyPriceVersionSnapshot,
+  assertSnapshotCharge,
   advanceCardFulfilment,
   reverseCardOrder,
   reverseFractionOrder,
 } from "../src/lib/commerceOrders.mjs"
 import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
+import { assertPaymentMatchesOrder, recordPaymentEvent } from "../src/lib/paymentAdapter.mjs"
 
 const chain = [
   { userId: "ssa", rank: "SSA" },
@@ -320,7 +322,20 @@ test("pending unit and total come from the Ubuntu price-version snapshot", () =>
   assert.equal(pending.total, "100.00")
   assert.equal(row.unit_price, "100.00")
   assert.equal(row.total, "100.00")
-  assert.equal(orderFromCardRow(row).total, "100.00")
+  const rebuilt = orderFromCardRow(row)
+  assert.equal(rebuilt.total, "100.00")
+  rebuilt.quote.unit.retailPrice = "1.00"
+  rebuilt.commissionableValue = "1.00"
+  const paid = confirmCommercePayment({ order: rebuilt, paymentId: "PAY-SNAP", members: chain })
+  assert.equal(paid.gapCover.totalPaid, "25.00")
+  assert.equal(paid.commissionableValue, "100.00")
+
+  const tamperedRow = { ...row, unit_price: "1.00" }
+  const fromTampered = orderFromCardRow(tamperedRow)
+  assert.equal(fromTampered.total, "100.00")
+  assertSnapshotCharge(fromTampered)
+  const paidTampered = confirmCommercePayment({ order: fromTampered, paymentId: "PAY-SNAP2", members: chain })
+  assert.equal(paidTampered.gapCover.totalPaid, "25.00")
 })
 
 test("fraction refund restores sold inventory and does not delete the original paid order", () => {
@@ -364,6 +379,34 @@ test("card refund creates reversal records after fulfilment exists and does not 
   assert.equal(refunded.reversal.gapReversals.reduce((sum, row) => sum + Number(row.amount), 0), -25)
   const again = reverseCardOrder({ order: refunded })
   assert.equal(again.status, "REFUNDED")
+})
+
+test("staging payment amount must match the Ubuntu price-version total", () => {
+  const order = applyPriceVersionSnapshot(createPendingCardOrder({
+    orderId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+    userId: "9",
+    productType: "CARD_PLASTIC",
+    priceVersionId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+  }), {
+    id: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+    productId: "CARD_PLASTIC",
+    retailPrice: "100.00",
+    productCost: "55.00",
+    commissionableValue: "100.00",
+    qv: "100.00",
+    blpRate: "5.00",
+  })
+  assertPaymentMatchesOrder(order, "100.00")
+  assert.throws(() => assertPaymentMatchesOrder(order, "1.00"), /price-version total/)
+  const recorded = recordPaymentEvent({
+    orderId: order.id,
+    kind: "CARD",
+    paymentId: "PAY-STAGE-1",
+    amount: "100.00",
+    order,
+  })
+  assert.equal(recorded.status, "RECORDED")
+  assert.equal(recorded.provider, "UA_STAGING")
 })
 
 test("card fulfilment starts at PROCESSING after PAID and advances one step", () => {

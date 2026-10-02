@@ -74,6 +74,14 @@ export function applyPriceVersionSnapshot(order, version) {
   return next
 }
 
+export function assertSnapshotCharge(order) {
+  if (!order) throw new Error("order is required")
+  const unit = order.snapshotUnitPrice || order.quote?.unit?.retailPrice || order.quote?.fractionUnitPrice
+  const total = order.total
+  if (unit == null || total == null) throw new Error("Charged amount requires a Ubuntu price-version snapshot")
+  // confirmCommercePayment must use order.commissionableValue === order.total from snapshot, not CARD_PRODUCTS
+}
+
 export function advanceCardFulfilment(currentStatus, nextStatus) {
   const from = String(currentStatus || "").toUpperCase()
   const to = String(nextStatus || "").toUpperCase()
@@ -318,8 +326,14 @@ export function confirmCommercePayment({
     throw new Error(`Order ${order.id} cannot be confirmed from ${order.status}`)
   }
 
+  let commissionableValue = order.commissionableValue
+  if (order.priceVersionId || order.priceVersion) {
+    assertSnapshotCharge(order)
+    commissionableValue = order.total
+  }
+
   const gap = processGapCover({
-    commissionableValue: order.commissionableValue,
+    commissionableValue,
     members,
     scheduleId,
   })
@@ -331,6 +345,7 @@ export function confirmCommercePayment({
 
   const confirmed = {
     ...order,
+    ...(order.priceVersionId || order.priceVersion ? { commissionableValue: order.total } : {}),
     status: "PAID",
     paymentId: String(paymentId),
     gapCover: {

@@ -78,10 +78,12 @@ assert.doesNotMatch(invest, /\/api\/admin\/commerce\/create-order/, "public inve
 
 const publicCardOrder = readFileSync(new URL("../src/routes/api/cards/order.ts", import.meta.url), "utf8")
 assert.match(publicCardOrder, /Public checkout is not open/, "public card order path is closed")
+assert.match(publicCardOrder, /status: 403/, "public card order stays 403")
 assert.doesNotMatch(publicCardOrder, /ua_card_orders/, "public card order does not insert Ubuntu rows")
 
 const publicFractionOrder = readFileSync(new URL("../src/routes/api/fractions/order.ts", import.meta.url), "utf8")
 assert.match(publicFractionOrder, /Public checkout is not open/, "public fraction order path is closed")
+assert.match(publicFractionOrder, /status: 403/, "public fraction order stays 403")
 assert.doesNotMatch(publicFractionOrder, /ua_fraction_transactions/, "public fraction order does not insert Ubuntu rows")
 
 const createOrder = readFileSync(new URL("../src/routes/api/admin/commerce/create-order.ts", import.meta.url), "utf8")
@@ -211,6 +213,31 @@ const commerceOrders = readFileSync(new URL("../src/lib/commerceOrders.mjs", imp
 assert.match(commerceOrders, /price_version_id/, "pending card insert stores price_version_id")
 assert.match(commerceOrders, /price_version(?!_id)/, "pending fraction insert stores price_version")
 assert.match(commerceOrders, /taken from Ubuntu price versions, not the client/, "order create rejects a client price")
+assert.match(commerceOrders, /assertSnapshotCharge/, "confirm path asserts snapshot charge")
+assert.match(commerceOrders, /price-version snapshot/, "charged amount requires Ubuntu price-version snapshot")
+assert.match(commerceOrders, /commissionableValue = order\.total/, "snapshot confirm charges order.total not catalog")
+assert.match(confirmPay, /confirmCommercePayment/, "confirm-payment settles via shared commerce confirm")
+
+const recordPay = readFileSync(new URL("../src/routes/api/admin/commerce/record-payment.ts", import.meta.url), "utf8")
+assert.match(recordPay, /UA_COMMERCE_CONFIRM_SECRET/, "staging payment record is secret-gated")
+assert.match(recordPay, /persistPaymentEvent/, "staging payment writes ua_payment_events")
+assert.match(recordPay, /checkoutEnabled: false/, "staging payment keeps checkout closed")
+assert.doesNotMatch(recordPay, /confirmCommercePayment/, "record-payment does not settle Gap")
+assert.doesNotMatch(recordPay, /fgubaqoftdeefcakejwu/, "record-payment never targets Aureus")
+
+const adminCardOrders = readFileSync(new URL("../src/routes/api/admin/cards/orders.ts", import.meta.url), "utf8")
+assert.match(adminCardOrders, /UA_COMMERCE_CONFIRM_SECRET/, "admin card list is secret-gated")
+assert.match(adminCardOrders, /ua_card_orders/, "admin card list reads Ubuntu card orders")
+assert.match(adminCardOrders, /checkoutEnabled: false/, "admin card list keeps checkout closed")
+
+const adminFractionOrders = readFileSync(new URL("../src/routes/api/admin/fractions/orders.ts", import.meta.url), "utf8")
+assert.match(adminFractionOrders, /UA_COMMERCE_CONFIRM_SECRET/, "admin fraction list is secret-gated")
+assert.match(adminFractionOrders, /ua_fraction_transactions/, "admin fraction list reads Ubuntu fraction rows")
+assert.match(adminFractionOrders, /checkoutEnabled: false/, "admin fraction list keeps checkout closed")
+
+const schema12 = readFileSync(new URL("../supabase/ubuntu-only/0012_ua_payment_events.sql", import.meta.url), "utf8")
+assert.match(schema12, /NEVER run this on Aureus production|NEVER run on Aureus/, "0012 refuses Aureus")
+assert.match(schema12, /ua_payment_events/, "0012 adds Ubuntu payment events")
 
 assert.match(createOrder, /loadCurrentPriceVersion/, "admin create loads the Ubuntu price version")
 assert.match(createOrder, /applyPriceVersionSnapshot/, "admin create copies unit and total from the price version")
