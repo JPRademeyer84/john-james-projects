@@ -31,6 +31,17 @@ assert.match(runner, /will not connect to Aureus production/, "migration runner 
 assert.match(runner, /ubuntu-only/, "runner applies Ubuntu-only SQL")
 assert.doesNotMatch(runner, /001_create_projects_system/, "old Aureus project-table migrations are not run")
 
+const backupRunner = readFileSync(new URL("../deploy/ubuntu-backup-restore.mjs", import.meta.url), "utf8")
+assert.match(backupRunner, /planUbuntuBackup/, "backup runner plans Ubuntu backups")
+assert.match(backupRunner, /Refuses Aureus production/, "backup runner refuses Aureus")
+assert.doesNotMatch(backupRunner, /--with-data/, "backup runner does not clone production data")
+assert.doesNotMatch(backupRunner, /fgubaqoftdeefcakejwu/, "backup runner source does not name Aureus as a target")
+
+const backupEngine = readFileSync(new URL("../src/lib/backupRestore.mjs", import.meta.url), "utf8")
+assert.match(backupEngine, /assertUbuntuBackupTarget/, "backup engine asserts Ubuntu target")
+assert.match(backupEngine, /withDataFromProduction: false/, "backup engine never copies production data")
+assert.match(backupEngine, /Do not reverse-migrate financial tables/, "rollback restores a dump instead of reversing money tables")
+
 const dashboard = readFileSync(new URL("../src/routes/dashboard/index.tsx", import.meta.url), "utf8")
 assert.match(dashboard, /current\.profile/, "dashboard uses server-loaded Aureus profile")
 assert.doesNotMatch(dashboard, /loadAureusMemberByAuthId/, "dashboard does not query Aureus from the browser")
