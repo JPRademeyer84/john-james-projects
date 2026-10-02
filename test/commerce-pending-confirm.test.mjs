@@ -10,6 +10,8 @@ import {
   pendingFractionInsert,
   requireUbuntuUserId,
   assertUbuntuUserActive,
+  applyPriceVersionSnapshot,
+  advanceCardFulfilment,
 } from "../src/lib/commerceOrders.mjs"
 import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
 
@@ -169,6 +171,7 @@ test("admin pending insert is PENDING_PAYMENT and confirm rebuilds from that row
   const rebuilt = orderFromCardRow(row)
   const paid = confirmCommercePayment({ order: rebuilt, paymentId: "PAY-7", members: chain })
   assert.equal(paid.status, "PAID")
+  assert.equal(paid.fulfilmentStatus, "PROCESSING")
   assert.equal(paid.gapCover.totalPaid, "25.00")
   assert.equal(paid.id, row.id)
 })
@@ -291,4 +294,36 @@ test("pending insert stores price_version_id and price_version when provided", (
     }),
     /Ubuntu price versions, not the client/
   )
+})
+
+test("pending unit and total come from the Ubuntu price-version snapshot", () => {
+  const version = {
+    id: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    productId: "CARD_PLASTIC",
+    retailPrice: "100.00",
+    productCost: "55.00",
+    commissionableValue: "100.00",
+    qv: "100.00",
+    gapSchedule: "STANDARD_25",
+    blpRate: "5.00",
+  }
+  const pending = applyPriceVersionSnapshot(createPendingCardOrder({
+    orderId: "abababab-abab-abab-abab-abababababab",
+    userId: "9",
+    productType: "CARD_PLASTIC",
+    priceVersionId: version.id,
+  }), version)
+  const row = pendingCardInsert(pending)
+  assert.equal(pending.snapshotUnitPrice, "100.00")
+  assert.equal(pending.total, "100.00")
+  assert.equal(row.unit_price, "100.00")
+  assert.equal(row.total, "100.00")
+  assert.equal(orderFromCardRow(row).total, "100.00")
+})
+
+test("card fulfilment starts at PROCESSING after PAID and advances one step", () => {
+  assert.equal(advanceCardFulfilment("PROCESSING", "ORDERED_FROM_PROVIDER"), "ORDERED_FROM_PROVIDER")
+  assert.equal(advanceCardFulfilment("SHIPPED", "DELIVERED"), "DELIVERED")
+  assert.throws(() => advanceCardFulfilment("PROCESSING", "SHIPPED"), /fulfilment transition/)
+  assert.throws(() => advanceCardFulfilment("DELIVERED", "SHIPPED"), /fulfilment transition/)
 })

@@ -109,6 +109,8 @@ assert.match(confirmPay, /persistConfirmVolume/, "confirm credits monthly QV and
 assert.match(confirmPay, /Pending order not found/, "confirm requires a real persisted pending row")
 assert.match(confirmPay, /orderFromCardRow|orderFromFractionRow/, "confirm rebuilds from the Ubuntu row, not client product fields")
 assert.match(confirmPay, /persistFractionInventory/, "fraction confirm decrements Ubuntu remaining inventory")
+assert.match(confirmPay, /fulfilment_status/, "card confirm starts fulfilment after PAID")
+assert.match(confirmPay, /PROCESSING/, "card confirm fulfilment starts at PROCESSING")
 assert.match(confirmPay, /loadUbuntuUser/, "confirm rechecks Ubuntu ua_users before settle")
 assert.match(confirmPay, /not active/, "inactive Ubuntu user cannot be confirmed")
 assert.doesNotMatch(confirmPay, /\/dashboard\/invest/, "confirm API is not the public invest page")
@@ -211,6 +213,7 @@ assert.match(commerceOrders, /price_version(?!_id)/, "pending fraction insert st
 assert.match(commerceOrders, /taken from Ubuntu price versions, not the client/, "order create rejects a client price")
 
 assert.match(createOrder, /loadCurrentPriceVersion/, "admin create loads the Ubuntu price version")
+assert.match(createOrder, /applyPriceVersionSnapshot/, "admin create copies unit and total from the price version")
 assert.match(createOrder, /persistFractionReserve/, "admin fraction create reserves Ubuntu inventory")
 assert.match(createOrder, /taken from Ubuntu price versions, not the client/, "admin create rejects client priceVersion")
 assert.match(createOrder, /body\[key\]/, "admin create inspects client priceVersion fields")
@@ -221,6 +224,17 @@ assert.match(schema8, /NEVER run on Aureus fgubaqoftdeefcakejwu/, "0008 refuses 
 assert.match(schema8, /INSERT INTO public\.ua_product_price_versions/, "0008 inserts price versions from ua_products")
 assert.match(schema8, /end_date IS NULL/, "0008 inserts a version only when none is open")
 assert.doesNotMatch(schema8, /CREATE TABLE/, "0008 does not recreate tables")
+
+const schema9 = readFileSync(new URL("../supabase/ubuntu-only/0009_ua_card_fulfilment_status.sql", import.meta.url), "utf8")
+assert.match(schema9, /NEVER run this on Aureus production/, "0009 refuses Aureus")
+assert.match(schema9, /fulfilment_status/, "0009 adds card fulfilment_status")
+
+const cardStatus = readFileSync(new URL("../src/routes/api/admin/cards/status.ts", import.meta.url), "utf8")
+assert.match(cardStatus, /UA_COMMERCE_CONFIRM_SECRET/, "card fulfilment status is secret-gated")
+assert.match(cardStatus, /advanceCardFulfilment/, "card status uses the shared fulfilment path")
+assert.match(cardStatus, /Card fulfilment starts after PAID/, "fulfilment cannot start before PAID")
+assert.match(cardStatus, /checkoutEnabled: false/, "card status keeps checkout closed")
+assert.doesNotMatch(cardStatus, /fgubaqoftdeefcakejwu/, "card status never targets Aureus")
 
 const persistVolume = readFileSync(new URL("../src/lib/persistVolume.server.ts", import.meta.url), "utf8")
 assert.match(persistVolume, /monthly_team_qv/, "confirm persist credits monthly team QV")

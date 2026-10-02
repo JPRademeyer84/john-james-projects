@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { createPendingCardOrder, createPendingFractionOrder } from "../../../../lib/commerceOrders.mjs"
+import { applyPriceVersionSnapshot, createPendingCardOrder, createPendingFractionOrder } from "../../../../lib/commerceOrders.mjs"
 import { persistPendingCardOrder, persistPendingFractionOrder } from "../../../../lib/persistPending.server"
 import { persistFractionReserve } from "../../../../lib/persistInventory.server"
 import { loadCurrentPriceVersion } from "../../../../lib/persistPricing.server"
@@ -80,14 +80,14 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
           if (kind === "CARD") {
             const productType = String(body.productType || "")
             const priceVersion = await loadCurrentPriceVersion(ubuntu, productType)
-            const order = createPendingCardOrder({
+            const order = applyPriceVersionSnapshot(createPendingCardOrder({
               orderId: String(body.orderId || crypto.randomUUID()),
               userId: buyer.userId,
               productType,
               quantity: Number(body.quantity || 1),
               sponsorId: String(body.sponsorId || ""),
               priceVersionId: priceVersion.id,
-            })
+            }), priceVersion)
             const persisted = await persistPendingCardOrder(ubuntu, order)
             return Response.json({
               ok: true,
@@ -121,7 +121,7 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
             loadActiveAureusPhase(ubuntu),
             loadCurrentPriceVersion(ubuntu, "AUREUS_FRACTION"),
           ])
-          const order = createPendingFractionOrder({
+          const order = applyPriceVersionSnapshot(createPendingFractionOrder({
             orderId: String(body.orderId || crypto.randomUUID()),
             userId: buyer.userId,
             quantity: Number(body.quantity || 1),
@@ -130,7 +130,7 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
             remainingUnderlying: inventory.remainingUnderlying,
             sponsorId: String(body.sponsorId || ""),
             priceVersion: priceVersion.id,
-          })
+          }), priceVersion)
           const persisted = await persistPendingFractionOrder(ubuntu, order)
           const reserved = await persistFractionReserve(ubuntu, {
             sourceTransactionId: order.id,

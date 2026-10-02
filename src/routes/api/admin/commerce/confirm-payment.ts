@@ -144,6 +144,8 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
               await ubuntu.from("ua_card_orders").update({
                 order_status: "PAID",
                 payment_id: paymentId,
+                fulfilment_status: confirmed.fulfilmentStatus || "PROCESSING",
+                fulfilment_at: new Date().toISOString(),
               }).eq("id", confirmed.id)
             } else {
               await persistFractionInventory(ubuntu, {

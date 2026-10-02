@@ -2,6 +2,89 @@ import { quoteCard } from "./cardEconomics.mjs"
 import { consumeUnderlyingInventory, quoteFractions } from "./fractionEngine.mjs"
 import { processGapCover } from "./gapCover.mjs"
 import { creditConfirmVolume } from "./volumeEngine.mjs"
+import { formatMoney2, parseMoney, percentOf } from "./money.mjs"
+
+export const CARD_FULFILMENT_STATUSES = Object.freeze([
+  "PROCESSING",
+  "ORDERED_FROM_PROVIDER",
+  "READY_FOR_SHIPPING",
+  "SHIPPED",
+  "DELIVERED",
+])
+
+export function applyPriceVersionSnapshot(order, version) {
+  if (!order || !version || !version.id || version.retailPrice == null || String(version.retailPrice).trim() === "") {
+    throw new Error("Ubuntu price version snapshot is required")
+  }
+  const qty = BigInt(order.quantity)
+  const unit = parseMoney(version.retailPrice)
+  const costUnit = parseMoney(version.productCost || "0")
+  const qvUnit = parseMoney(version.qv || version.retailPrice)
+  const commissionableUnit = parseMoney(version.commissionableValue || version.retailPrice)
+  const total = unit * qty
+  const cost = costUnit * qty
+  const qv = qvUnit * qty
+  const commissionable = commissionableUnit * qty
+  const gap = percentOf(commissionable, "25")
+  const blp = percentOf(commissionable, String(version.blpRate || "5"))
+  const gross = total - cost - gap - blp
+  const unitPrice = formatMoney2(unit)
+  const next = {
+    ...order,
+    total: formatMoney2(total),
+    commissionableValue: formatMoney2(commissionable),
+    qv: formatMoney2(qv),
+    cost: formatMoney2(cost),
+    gap: formatMoney2(gap),
+    blp: formatMoney2(blp),
+    ubuntuAfriqueGross: formatMoney2(gross),
+    snapshotUnitPrice: unitPrice,
+  }
+  if (order.kind === "CARD") {
+    next.priceVersionId = String(version.id)
+    next.quote = {
+      ...order.quote,
+      unit: {
+        ...order.quote.unit,
+        retailPrice: unitPrice,
+        cost: formatMoney2(costUnit),
+        gap: formatMoney2(percentOf(unit, "25")),
+        blp: formatMoney2(percentOf(unit, String(version.blpRate || "5"))),
+        ubuntuAfriqueGross: formatMoney2(unit - costUnit - percentOf(unit, "25") - percentOf(unit, String(version.blpRate || "5"))),
+        qv: formatMoney2(qvUnit),
+      },
+      totals: {
+        ...order.quote.totals,
+        retailPrice: formatMoney2(total),
+        cost: formatMoney2(cost),
+        gap: formatMoney2(gap),
+        blp: formatMoney2(blp),
+        ubuntuAfriqueGross: formatMoney2(gross),
+        qv: formatMoney2(qv),
+      },
+    }
+  } else {
+    next.priceVersion = String(version.id)
+    next.quote = {
+      ...order.quote,
+      fractionUnitPrice: unitPrice,
+      total: formatMoney2(total),
+    }
+  }
+  return next
+}
+
+export function advanceCardFulfilment(currentStatus, nextStatus) {
+  const from = String(currentStatus || "").toUpperCase()
+  const to = String(nextStatus || "").toUpperCase()
+  const path = CARD_FULFILMENT_STATUSES
+  const i = path.indexOf(from)
+  const j = path.indexOf(to)
+  if (i < 0 || j !== i + 1) {
+    throw new Error("Invalid card fulfilment transition")
+  }
+  return to
+}
 
 export function requireUbuntuUserId(userId) {
   const id = Number(userId)
@@ -131,7 +214,7 @@ export function pendingCardInsert(order) {
     user_id: Number.isInteger(Number(order.userId)) ? Number(order.userId) : null,
     product_id: order.productId,
     quantity: order.quantity,
-    unit_price: order.quote.unit.retailPrice,
+    unit_price: order.snapshotUnitPrice || order.quote.unit.retailPrice,
     total: order.total,
     qv: order.qv,
     order_status: "PENDING_PAYMENT",
@@ -148,7 +231,7 @@ export function pendingFractionInsert(order) {
     id: String(order.id),
     buyer_id: Number.isInteger(Number(order.userId)) ? Number(order.userId) : null,
     quantity: order.quantity,
-    fraction_price: "10.00",
+    fraction_price: order.snapshotUnitPrice || order.quote.fractionUnitPrice || "10.00",
     total_amount: order.total,
     aureus_phase: order.aureusPhase,
     aureus_share_price: order.aureusSharePrice,
@@ -165,7 +248,7 @@ export function orderFromCardRow(row) {
   if (!row || !row.id) {
     throw new Error("Pending order not found")
   }
-  return createPendingCardOrder({
+  const pending = createPendingCardOrder({
     orderId: String(row.id),
     userId: String(row.user_id || ""),
     productType: String(row.product_id || ""),
@@ -173,13 +256,23 @@ export function orderFromCardRow(row) {
     sponsorId: String(row.sponsor_id || ""),
     priceVersionId: row.price_version_id || "",
   })
+  if (row.unit_price != null && String(row.unit_price).trim() !== "") {
+    pending.snapshotUnitPrice = formatMoney2(parseMoney(row.unit_price))
+    if (pending.quote?.unit) pending.quote.unit.retailPrice = pending.snapshotUnitPrice
+  }
+  if (row.total != null && String(row.total).trim() !== "") {
+    pending.total = formatMoney2(parseMoney(row.total))
+    pending.commissionableValue = pending.total
+    if (pending.quote?.totals) pending.quote.totals.retailPrice = pending.total
+  }
+  return pending
 }
 
 export function orderFromFractionRow(row, remainingUnderlying) {
   if (!row || !row.id) {
     throw new Error("Pending order not found")
   }
-  return createPendingFractionOrder({
+  const pending = createPendingFractionOrder({
     orderId: String(row.id),
     userId: String(row.buyer_id || ""),
     quantity: Number(row.quantity || 1),
@@ -189,6 +282,16 @@ export function orderFromFractionRow(row, remainingUnderlying) {
     sponsorId: String(row.sponsor_id || ""),
     priceVersion: row.price_version || "",
   })
+  if (row.fraction_price != null && String(row.fraction_price).trim() !== "") {
+    pending.snapshotUnitPrice = formatMoney2(parseMoney(row.fraction_price))
+    if (pending.quote) pending.quote.fractionUnitPrice = pending.snapshotUnitPrice
+  }
+  if (row.total_amount != null && String(row.total_amount).trim() !== "") {
+    pending.total = formatMoney2(parseMoney(row.total_amount))
+    pending.commissionableValue = pending.total
+    if (pending.quote) pending.quote.total = pending.total
+  }
+  return pending
 }
 
 export function confirmCommercePayment({
@@ -238,6 +341,10 @@ export function confirmCommercePayment({
     },
     volume,
     blpAccrual: volume.blpAccrual,
+  }
+
+  if (order.kind === "CARD") {
+    confirmed.fulfilmentStatus = "PROCESSING"
   }
 
   if (order.kind === "FRACTION") {
