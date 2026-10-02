@@ -143,6 +143,42 @@ export function convertReserveToSale({
   }
 }
 
+export function restoreReservedInventory({
+  remainingUnderlying,
+  reservedUnderlying,
+  underlyingShareEquivalent,
+}) {
+  const remaining = parseMoney(remainingUnderlying)
+  const reserved = parseMoney(reservedUnderlying)
+  const used = parsePositiveUnderlying(underlyingShareEquivalent)
+  if (compareMoney(used, reserved) > 0) {
+    throw new Error("Restore exceeds reserved underlying share inventory")
+  }
+  return {
+    remainingUnderlying: formatMoney2(addMoney(remaining, used)),
+    reservedUnderlying: formatMoney2(subtractMoney(reserved, used)),
+    underlyingShareEquivalent: formatMoney2(used),
+  }
+}
+
+export function restoreSoldInventory({
+  remainingUnderlying,
+  soldUnderlying,
+  underlyingShareEquivalent,
+}) {
+  const remaining = parseMoney(remainingUnderlying)
+  const sold = parseMoney(soldUnderlying)
+  const used = parsePositiveUnderlying(underlyingShareEquivalent)
+  if (compareMoney(used, sold) > 0) {
+    throw new Error("Restore exceeds sold underlying share inventory")
+  }
+  return {
+    remainingUnderlying: formatMoney2(addMoney(remaining, used)),
+    soldUnderlying: formatMoney2(subtractMoney(sold, used)),
+    underlyingShareEquivalent: formatMoney2(used),
+  }
+}
+
 export function phaseAvailability(remainingUnderlying, aureusSharePrice) {
   return {
     remainingUnderlying: formatMoney2(parseMoney(remainingUnderlying)),

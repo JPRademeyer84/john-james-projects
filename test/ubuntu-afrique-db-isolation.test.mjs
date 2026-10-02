@@ -255,6 +255,33 @@ assert.match(cardRefund, /Card refund requires fulfilment to exist/, "refund ref
 assert.match(cardRefund, /checkoutEnabled: false/, "card refund keeps checkout closed")
 assert.doesNotMatch(cardRefund, /fgubaqoftdeefcakejwu/, "card refund never targets Aureus")
 
+const fractionRefund = readFileSync(new URL("../src/routes/api/admin/fractions/refund.ts", import.meta.url), "utf8")
+assert.match(fractionRefund, /UA_COMMERCE_CONFIRM_SECRET/, "fraction refund is secret-gated")
+assert.match(fractionRefund, /reverseFractionOrder/, "fraction refund uses the shared reversal path")
+assert.match(fractionRefund, /checkoutEnabled: false/, "fraction refund keeps checkout closed")
+assert.doesNotMatch(fractionRefund, /fgubaqoftdeefcakejwu/, "fraction refund never targets Aureus")
+
+const persistInventoryAfter = readFileSync(new URL("../src/lib/persistInventory.server.ts", import.meta.url), "utf8")
+assert.match(persistInventoryAfter, /persistFractionRefundRestore/, "fraction refund restore exists")
+assert.match(persistInventoryAfter, /FRACTION_SALE_REVERSAL/, "sale reversal is ledgered")
+assert.match(persistInventoryAfter, /FRACTION_RESERVE_RELEASE/, "reserve release is ledgered")
+
+const persistRefundAfter = readFileSync(new URL("../src/lib/persistRefund.server.ts", import.meta.url), "utf8")
+assert.match(persistRefundAfter, /persistFractionRefund/, "fraction refund persist exists")
+assert.match(persistRefundAfter, /FRACTION_REFUND/, "fraction refund reversal type exists")
+
+const liabilityEngine = readFileSync(new URL("../src/lib/liabilityEngine.mjs", import.meta.url), "utf8")
+assert.match(liabilityEngine, /FRACTION_REMITTED/, "remitted is a distinct liability class")
+assert.match(liabilityEngine, /outstanding/, "outstanding is original minus remitted")
+
+const persistLiability = readFileSync(new URL("../src/lib/persistLiability.server.ts", import.meta.url), "utf8")
+assert.match(persistLiability, /persistLiabilityRemitted/, "remit helper exists and is not an API")
+assert.doesNotMatch(persistLiability, /fgubaqoftdeefcakejwu/, "liability persist never targets Aureus")
+
+const schema11 = readFileSync(new URL("../supabase/ubuntu-only/0011_ua_liability_reserved_remitted.sql", import.meta.url), "utf8")
+assert.match(schema11, /NEVER run this on Aureus production/, "0011 refuses Aureus")
+assert.match(schema11, /RESERVED DOES NOT MEAN PAID/, "0011 documents reserved vs remitted")
+
 const persistVolume = readFileSync(new URL("../src/lib/persistVolume.server.ts", import.meta.url), "utf8")
 assert.match(persistVolume, /monthly_team_qv/, "confirm persist credits monthly team QV")
 assert.match(persistVolume, /ua_blp_contributions/, "confirm persist accrues open BLP period")

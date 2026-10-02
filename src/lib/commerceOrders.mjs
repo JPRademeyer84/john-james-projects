@@ -1,5 +1,5 @@
 import { quoteCard } from "./cardEconomics.mjs"
-import { consumeUnderlyingInventory, quoteFractions } from "./fractionEngine.mjs"
+import { consumeUnderlyingInventory, quoteFractions, restoreReservedInventory, restoreSoldInventory } from "./fractionEngine.mjs"
 import { processGapCover } from "./gapCover.mjs"
 import { creditConfirmVolume } from "./volumeEngine.mjs"
 import { formatMoney2, parseMoney, percentOf } from "./money.mjs"
@@ -406,6 +406,132 @@ export function reverseCardOrder({ order, reason = "" }) {
       commissionableReversed: order.commissionableValue,
       gapReversals,
       reason: String(reason || ""),
+    },
+  }
+}
+
+function fractionHeldAmount(order) {
+  if (order?.fractionReserve && order.fractionReserve.amount != null && String(order.fractionReserve.amount).trim() !== "") {
+    return String(order.fractionReserve.amount)
+  }
+  if (order?.reservedUnderlying != null && String(order.reservedUnderlying).trim() !== "") {
+    return String(order.reservedUnderlying)
+  }
+  return ""
+}
+
+function fractionUnderlyingAmount(order) {
+  const candidates = [
+    order?.underlyingShareEquivalent,
+    order?.ownership?.underlyingShareEquivalent,
+    order?.inventory?.underlyingShareEquivalent,
+    order?.fractionSale?.amount,
+    order?.fractionReserve?.amount,
+  ]
+  for (const value of candidates) {
+    if (value != null && String(value).trim() !== "") return String(value)
+  }
+  return ""
+}
+
+export function reverseFractionOrder({ order, reason = "" }) {
+  if (!order || order.kind !== "FRACTION") {
+    throw new Error("fraction order is required")
+  }
+  if (order.status === "REFUNDED" || order.status === "CANCELLED") {
+    return order
+  }
+
+  if (order.status === "PENDING_PAYMENT") {
+    const marked = Boolean(order.fractionReserve) || fractionHeldAmount(order) !== ""
+    if (!marked) {
+      throw new Error("Pending fraction cancel requires a reserve")
+    }
+    const used = fractionUnderlyingAmount(order)
+    if (!used) {
+      throw new Error("Pending fraction cancel requires a reserve")
+    }
+    const reservedPool = order.reservedUnderlying != null && String(order.reservedUnderlying).trim() !== ""
+      ? String(order.reservedUnderlying)
+      : used
+    const restored = restoreReservedInventory({
+      remainingUnderlying: order.remainingUnderlying ?? "0",
+      reservedUnderlying: reservedPool,
+      underlyingShareEquivalent: used,
+    })
+    return {
+      ...order,
+      status: "CANCELLED",
+      remainingUnderlying: restored.remainingUnderlying,
+      reservedUnderlying: restored.reservedUnderlying,
+      inventory: restored,
+      reversal: {
+        sourceTransactionId: String(order.id),
+        reversalType: "FRACTION_REFUND",
+        amount: order.total,
+        qvReversed: "0.00",
+        blpReversed: "0.00",
+        commissionableReversed: "0.00",
+        gapReversals: [],
+        underlyingShareEquivalent: restored.underlyingShareEquivalent,
+        reason: String(reason || ""),
+        inventoryMode: "RESERVE",
+      },
+    }
+  }
+
+  if (order.status !== "PAID") {
+    throw new Error("Fraction refund requires a PAID order")
+  }
+
+  const hasReserve = Boolean(order.fractionReserve) || fractionHeldAmount(order) !== ""
+  const hasSale = Boolean(order.ownership || order.inventory || order.fractionSale || order.fulfilmentStatus)
+  if (!hasReserve && !hasSale) {
+    throw new Error("Fraction refund requires a reserve or a sale")
+  }
+  if (!order.gapCover || !Array.isArray(order.gapCover.payments)) {
+    throw new Error("Fraction refund requires posted Gap Cover")
+  }
+
+  const used = fractionUnderlyingAmount(order)
+  if (!used) {
+    throw new Error("Fraction refund requires underlying share equivalent")
+  }
+  const soldSource = order.inventory?.soldUnderlying ?? order.soldUnderlying
+  const remainingSource = order.inventory?.remainingUnderlying ?? order.remainingUnderlying
+  const restored = restoreSoldInventory({
+    remainingUnderlying: remainingSource == null || String(remainingSource).trim() === "" ? "0" : String(remainingSource),
+    soldUnderlying: soldSource == null || String(soldSource).trim() === "" ? used : String(soldSource),
+    underlyingShareEquivalent: used,
+  })
+  const gapReversals = order.gapCover.payments.map((payment) => ({
+    recipientId: String(payment.recipientId),
+    recipientRank: String(payment.recipientRank),
+    commissionType: "REVERSAL",
+    previousEntitlement: payment.previousEntitlement,
+    newEntitlement: payment.newEntitlement,
+    gapPercentage: payment.gapPercentage,
+    amount: formatMoney2(-parseMoney(payment.amount)),
+    compPlanVersion: payment.compPlanVersion || order.gapCover.compPlanVersion,
+  }))
+
+  return {
+    ...order,
+    status: "REFUNDED",
+    remainingUnderlying: restored.remainingUnderlying,
+    soldUnderlying: restored.soldUnderlying,
+    inventory: restored,
+    reversal: {
+      sourceTransactionId: String(order.id),
+      reversalType: "FRACTION_REFUND",
+      amount: order.total,
+      qvReversed: order.qv,
+      blpReversed: order.blpAccrual?.blpAdded || order.blp || "0.00",
+      commissionableReversed: order.commissionableValue,
+      gapReversals,
+      underlyingShareEquivalent: restored.underlyingShareEquivalent,
+      reason: String(reason || ""),
+      inventoryMode: "SALE",
     },
   }
 }

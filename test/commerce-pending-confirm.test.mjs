@@ -13,6 +13,7 @@ import {
   applyPriceVersionSnapshot,
   advanceCardFulfilment,
   reverseCardOrder,
+  reverseFractionOrder,
 } from "../src/lib/commerceOrders.mjs"
 import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
 
@@ -320,6 +321,26 @@ test("pending unit and total come from the Ubuntu price-version snapshot", () =>
   assert.equal(row.unit_price, "100.00")
   assert.equal(row.total, "100.00")
   assert.equal(orderFromCardRow(row).total, "100.00")
+})
+
+test("fraction refund restores sold inventory and does not delete the original paid order", () => {
+  const pending = createPendingFractionOrder({
+    orderId: "f1f1f1f1-f1f1-f1f1-f1f1-f1f1f1f1f1f1",
+    userId: "9",
+    quantity: 1,
+    aureusSharePrice: "100.00",
+    aureusPhase: 10,
+    remainingUnderlying: "100000",
+  })
+  assert.throws(() => reverseFractionOrder({ order: pending }), /reserve/)
+  const paid = confirmCommercePayment({ order: pending, paymentId: "PAY-FR1", members: chain })
+  const refunded = reverseFractionOrder({ order: paid, reason: "test fraction refund" })
+  assert.equal(refunded.status, "REFUNDED")
+  assert.equal(paid.status, "PAID")
+  assert.equal(refunded.reversal.reversalType, "FRACTION_REFUND")
+  assert.equal(refunded.inventory.remainingUnderlying, "100000.00")
+  assert.equal(refunded.inventory.soldUnderlying, "0.00")
+  assert.equal(refunded.reversal.gapReversals.length > 0, true)
 })
 
 test("card refund creates reversal records after fulfilment exists and does not delete the original", () => {

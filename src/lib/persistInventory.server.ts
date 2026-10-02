@@ -1,8 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { consumeUnderlyingInventory, convertReserveToSale, reserveUnderlyingInventory } from "./fractionEngine.mjs"
+import { consumeUnderlyingInventory, convertReserveToSale, reserveUnderlyingInventory, restoreReservedInventory, restoreSoldInventory } from "./fractionEngine.mjs"
 import { compareMoney, parseMoney } from "./money.mjs"
 
 const INVENTORY_ID = "AUREUS_100K"
+
+type LedgerEntryType =
+  | "FRACTION_RESERVE"
+  | "FRACTION_SALE"
+  | "FRACTION_RESERVE_RELEASE"
+  | "FRACTION_SALE_REVERSAL"
 
 function isDuplicate(error: { message?: string; code?: string } | null) {
   if (!error) return false
@@ -13,7 +19,7 @@ function isDuplicate(error: { message?: string; code?: string } | null) {
 async function findLedgerEntry(
   ubuntu: SupabaseClient,
   sourceTransactionId: string,
-  entryType: "FRACTION_RESERVE" | "FRACTION_SALE"
+  entryType: LedgerEntryType
 ) {
   const { data, error } = await ubuntu
     .from("ua_aureus_liability_ledger")
@@ -42,7 +48,7 @@ async function loadInventoryRow(ubuntu: SupabaseClient) {
 
 async function insertLedger(
   ubuntu: SupabaseClient,
-  entryType: "FRACTION_RESERVE" | "FRACTION_SALE",
+  entryType: LedgerEntryType,
   amount: string,
   sourceTransactionId: string,
   note: string
@@ -61,7 +67,7 @@ async function insertLedger(
 async function deleteLedger(
   ubuntu: SupabaseClient,
   sourceTransactionId: string,
-  entryType: "FRACTION_RESERVE" | "FRACTION_SALE"
+  entryType: LedgerEntryType
 ) {
   await ubuntu
     .from("ua_aureus_liability_ledger")
@@ -194,5 +200,126 @@ export async function persistFractionInventory(
     throw new Error("Purchase exceeds remaining underlying share inventory")
   }
 
+  return { idempotent: false, inventory: next }
+}
+
+function assertRestoreAmount(actual: string, expected: string, label: string) {
+  if (compareMoney(parseMoney(actual), parseMoney(expected)) !== 0) {
+    throw new Error(label)
+  }
+}
+
+export async function persistFractionRefundRestore(
+  ubuntu: SupabaseClient,
+  input: {
+    sourceTransactionId: string
+    underlyingShareEquivalent: string
+    mode: "RESERVE" | "SALE"
+  }
+) {
+  if (input.mode === "RESERVE") {
+    const release = await findLedgerEntry(ubuntu, input.sourceTransactionId, "FRACTION_RESERVE_RELEASE")
+    if (release) return { idempotent: true }
+
+    const sale = await findLedgerEntry(ubuntu, input.sourceTransactionId, "FRACTION_SALE")
+    if (sale) {
+      throw new Error("Fraction sale already posted")
+    }
+    const reserve = await findLedgerEntry(ubuntu, input.sourceTransactionId, "FRACTION_RESERVE")
+    if (!reserve) {
+      throw new Error("Fraction reserve is missing")
+    }
+    if (reserve.amount == null) {
+      throw new Error("Fraction reserve amount is missing")
+    }
+    assertRestoreAmount(
+      input.underlyingShareEquivalent,
+      String(reserve.amount),
+      "Fraction reserve release amount does not match the Ubuntu reserve"
+    )
+
+    const inventory = await loadInventoryRow(ubuntu)
+    const next = restoreReservedInventory({
+      remainingUnderlying: String(inventory.remaining_underlying || "0"),
+      reservedUnderlying: String(reserve.amount),
+      underlyingShareEquivalent: input.underlyingShareEquivalent,
+    })
+    const inserted = await insertLedger(
+      ubuntu,
+      "FRACTION_RESERVE_RELEASE",
+      next.underlyingShareEquivalent,
+      input.sourceTransactionId,
+      "Ubuntu fraction reserve release"
+    )
+    if (inserted.duplicate) return { idempotent: true }
+
+    const { data: updated, error: updateError } = await ubuntu
+      .from("ua_underlying_inventory")
+      .update({
+        remaining_underlying: next.remainingUnderlying,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", INVENTORY_ID)
+      .eq("remaining_underlying", inventory.remaining_underlying)
+      .select("id")
+    if (updateError) throw new Error(updateError.message)
+    if (!updated || updated.length === 0) {
+      await deleteLedger(ubuntu, input.sourceTransactionId, "FRACTION_RESERVE_RELEASE")
+      throw new Error("Underlying remaining balance changed during reserve release")
+    }
+    return { idempotent: false, inventory: next }
+  }
+
+  if (input.mode !== "SALE") {
+    throw new Error("Fraction refund restore mode must be RESERVE or SALE")
+  }
+
+  const reversal = await findLedgerEntry(ubuntu, input.sourceTransactionId, "FRACTION_SALE_REVERSAL")
+  if (reversal) return { idempotent: true }
+
+  const sale = await findLedgerEntry(ubuntu, input.sourceTransactionId, "FRACTION_SALE")
+  if (!sale) {
+    throw new Error("Fraction sale is missing")
+  }
+  if (sale.amount == null) {
+    throw new Error("Fraction sale amount is missing")
+  }
+  assertRestoreAmount(
+    input.underlyingShareEquivalent,
+    String(sale.amount),
+    "Fraction sale reversal amount does not match the Ubuntu sale"
+  )
+
+  const inventory = await loadInventoryRow(ubuntu)
+  const next = restoreSoldInventory({
+    remainingUnderlying: String(inventory.remaining_underlying || "0"),
+    soldUnderlying: String(inventory.sold_underlying || "0"),
+    underlyingShareEquivalent: input.underlyingShareEquivalent,
+  })
+  const inserted = await insertLedger(
+    ubuntu,
+    "FRACTION_SALE_REVERSAL",
+    next.underlyingShareEquivalent,
+    input.sourceTransactionId,
+    "Ubuntu fraction sale reversal"
+  )
+  if (inserted.duplicate) return { idempotent: true }
+
+  const { data: updated, error: updateError } = await ubuntu
+    .from("ua_underlying_inventory")
+    .update({
+      remaining_underlying: next.remainingUnderlying,
+      sold_underlying: next.soldUnderlying,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", INVENTORY_ID)
+    .eq("remaining_underlying", inventory.remaining_underlying)
+    .eq("sold_underlying", inventory.sold_underlying)
+    .select("id")
+  if (updateError) throw new Error(updateError.message)
+  if (!updated || updated.length === 0) {
+    await deleteLedger(ubuntu, input.sourceTransactionId, "FRACTION_SALE_REVERSAL")
+    throw new Error("Underlying sold balance changed during sale reversal")
+  }
   return { idempotent: false, inventory: next }
 }

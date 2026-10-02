@@ -7,7 +7,10 @@ import {
   phaseAvailability,
   quoteFractions,
   reserveUnderlyingInventory,
+  restoreReservedInventory,
+  restoreSoldInventory,
 } from "../src/lib/fractionEngine.mjs"
+import { classifyLiabilityEntry, summarizeLiability } from "../src/lib/liabilityEngine.mjs"
 
 test("133 plastic card $100: cost 55, gap 25, BLP 5, gross 15", () => {
   const quote = quoteCard("CARD_PLASTIC", 1)
@@ -150,4 +153,37 @@ test("confirm converts a reserve into a sale without decrementing remaining agai
       }),
     /exceeds reserved underlying/
   )
+})
+
+test("fraction refund restore puts reserved and sold underlying back", () => {
+  const released = restoreReservedInventory({
+    remainingUnderlying: "99999.90",
+    reservedUnderlying: "0.10",
+    underlyingShareEquivalent: "0.10",
+  })
+  assert.equal(released.remainingUnderlying, "100000.00")
+  assert.equal(released.reservedUnderlying, "0.00")
+  const unsold = restoreSoldInventory({
+    remainingUnderlying: "99999.90",
+    soldUnderlying: "0.10",
+    underlyingShareEquivalent: "0.10",
+  })
+  assert.equal(unsold.remainingUnderlying, "100000.00")
+  assert.equal(unsold.soldUnderlying, "0.00")
+})
+
+test("reserved and allocated liability are not remitted; outstanding stays original until remitted", () => {
+  assert.equal(classifyLiabilityEntry("FRACTION_RESERVE"), "reserved")
+  assert.equal(classifyLiabilityEntry("FRACTION_SALE"), "allocated")
+  assert.equal(classifyLiabilityEntry("FRACTION_REMITTED"), "remitted")
+  const summary = summarizeLiability([
+    { entryType: "ORIGINAL_LIABILITY", amount: "10000000.00" },
+    { entryType: "FRACTION_RESERVE", amount: "5.00" },
+    { entryType: "FRACTION_SALE", amount: "5.00" },
+    { entryType: "FRACTION_REMITTED", amount: "0.00" },
+  ])
+  assert.equal(summary.reservedNet, "5.00")
+  assert.equal(summary.allocatedNet, "5.00")
+  assert.equal(summary.remitted, "0.00")
+  assert.equal(summary.outstanding, "10000000.00")
 })

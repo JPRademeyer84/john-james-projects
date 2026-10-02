@@ -1,0 +1,14 @@
+-- Ubuntu Afrique liability entry-type meanings.
+-- Apply ONLY to the Ubuntu Afrique Supabase project (rbyipalrasawbjpsppgu).
+-- NEVER run this on Aureus production (fgubaqoftdeefcakejwu).
+-- NEVER run on Aureus fgubaqoftdeefcakejwu.
+--
+-- Ledger only. No column change. RESERVED DOES NOT MEAN PAID.
+-- ORIGINAL_LIABILITY: 100000 * $100 initial obligation.
+-- FRACTION_RESERVE: reserved, not remitted.
+-- FRACTION_SALE: allocated, not remitted.
+-- FRACTION_RESERVE_RELEASE: reserve undone.
+-- FRACTION_SALE_REVERSAL: sale allocation undone.
+-- FRACTION_REMITTED: funds actually remitted to Aureus.
+-- Outstanding = original - remitted.
+SELECT 1;
