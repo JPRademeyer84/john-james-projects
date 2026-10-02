@@ -386,4 +386,40 @@ assert.doesNotMatch(financePage, /\/api\/cards\/order/, "finance page cannot cre
 assert.doesNotMatch(financePage, /\/api\/fractions\/order/, "finance page cannot create fraction orders")
 assert.doesNotMatch(financePage, /\/api\/admin\/commerce\/confirm-payment/, "finance page cannot confirm payment")
 
+const schema14 = readFileSync(new URL("../supabase/ubuntu-only/0014_ua_marketplace_companies.sql", import.meta.url), "utf8")
+assert.match(schema14, /NEVER run this on Aureus production/, "0014 refuses Aureus")
+assert.match(schema14, /ua_marketplace_companies/, "0014 adds Ubuntu marketplace companies")
+
+const schema15 = readFileSync(new URL("../supabase/ubuntu-only/0015_ua_marketplace_orders.sql", import.meta.url), "utf8")
+assert.match(schema15, /NEVER run this on Aureus production/, "0015 refuses Aureus")
+assert.match(schema15, /ua_marketplace_orders/, "0015 adds Ubuntu marketplace orders")
+assert.match(schema15, /ua_company_settlements/, "0015 adds Ubuntu company settlements")
+
+const adminCompanies = readFileSync(new URL("../src/routes/api/admin/marketplace/companies.ts", import.meta.url), "utf8")
+assert.match(adminCompanies, /UA_COMMERCE_CONFIRM_SECRET/, "admin marketplace companies are secret-gated")
+assert.match(adminCompanies, /checkoutEnabled: false/, "admin marketplace companies keep checkout closed")
+assert.doesNotMatch(adminCompanies, /fgubaqoftdeefcakejwu/, "admin marketplace companies never target Aureus")
+
+const adminProducts = readFileSync(new URL("../src/routes/api/admin/marketplace/products.ts", import.meta.url), "utf8")
+assert.match(adminProducts, /UA_COMMERCE_CONFIRM_SECRET/, "admin marketplace products are secret-gated")
+assert.match(adminProducts, /STANDARD_25/, "admin marketplace products force shared Gap")
+assert.match(adminProducts, /checkoutEnabled: false/, "admin marketplace products keep checkout closed")
+
+const adminSettle = readFileSync(new URL("../src/routes/api/admin/marketplace/settle.ts", import.meta.url), "utf8")
+assert.match(adminSettle, /UA_COMMERCE_CONFIRM_SECRET/, "admin marketplace settle is secret-gated")
+assert.match(adminSettle, /settleMarketplaceOrder/, "admin marketplace settle uses shared Gap settlement")
+assert.match(adminSettle, /Client-supplied rank chains are rejected/, "admin marketplace settle rejects client members")
+assert.match(adminSettle, /checkoutEnabled: false/, "admin marketplace settle keeps checkout closed")
+assert.doesNotMatch(adminSettle, /fgubaqoftdeefcakejwu/, "admin marketplace settle never targets Aureus")
+
+const publicMarketOrder = readFileSync(new URL("../src/routes/api/marketplace/order.ts", import.meta.url), "utf8")
+assert.match(publicMarketOrder, /Public checkout is not open/, "public marketplace order stays closed")
+assert.match(publicMarketOrder, /status: 403/, "public marketplace order stays 403")
+assert.doesNotMatch(publicMarketOrder, /fgubaqoftdeefcakejwu/, "public marketplace order never targets Aureus")
+
+const marketSettle = readFileSync(new URL("../src/lib/marketplaceSettlement.mjs", import.meta.url), "utf8")
+assert.match(marketSettle, /processGapCover/, "marketplace settlement uses shared Gap Cover")
+assert.match(marketSettle, /STANDARD_25/, "marketplace settlement is STANDARD_25 only")
+assert.doesNotMatch(marketSettle, /CUSTOM_30/, "marketplace settlement has no second plan")
+
 console.log("ubuntu-afrique-db-isolation.test.mjs: OK")
