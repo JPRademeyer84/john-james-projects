@@ -85,6 +85,25 @@ test("independent legs: two ASMs under one personal leg count as one", () => {
   assert.equal(correct, 2)
 })
 
+
+test("inactive Gap recipient is not paid; their gap stays unclaimed", () => {
+  const result = processGapCover({
+    commissionableValue: "100.00",
+    members: [
+      { userId: "ssa", rank: "SSA", isActive: false },
+      { userId: "asm", rank: "ASM", isActive: true },
+      { userId: "bsm", rank: "BSM", isActive: true },
+      { userId: "ssm", rank: "SSM", isActive: true },
+      { userId: "vp", rank: "VP", isActive: true },
+    ],
+  })
+  assert.equal(result.payments.length, 4)
+  assert.equal(result.payments.some((row) => row.recipientId === "ssa"), false)
+  assert.equal(result.payments[0].recipientId, "asm")
+  assert.equal(result.payments[0].amount, "6.00")
+  assert.equal(result.totalPaid, "15.00")
+  assert.equal(result.unclaimedGap, "10.00")
+})
 test("standard entitlements match the matrix", () => {
   assert.equal(entitlementForRank("SSA"), "10")
   assert.equal(entitlementForRank("ASM"), "16")

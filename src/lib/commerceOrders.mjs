@@ -18,13 +18,43 @@ export function assertUbuntuUserActive(user) {
   return user
 }
 
+const PRICE_VERSION_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function rejectClientSuppliedPrice(input) {
+  for (const key of ["retailPrice", "unitPrice"]) {
+    if (input[key] != null && String(input[key]).trim() !== "") {
+      throw new Error("Price is taken from Ubuntu price versions, not the client")
+    }
+  }
+  for (const key of ["priceVersionId", "priceVersion"]) {
+    if (input[key] != null && typeof input[key] === "object") {
+      throw new Error("Price is taken from Ubuntu price versions, not the client")
+    }
+  }
+}
+
+function readPriceVersionId(value) {
+  if (value == null || String(value).trim() === "") return ""
+  const id = String(value).trim()
+  if (!PRICE_VERSION_UUID.test(id)) {
+    throw new Error("priceVersionId must be a Ubuntu price version id")
+  }
+  return id
+}
+
 export function createPendingCardOrder({
   orderId,
   userId,
   productType,
   quantity = 1,
   sponsorId = "",
+  priceVersionId = "",
+  retailPrice,
+  unitPrice,
+  priceVersion,
 }) {
+  rejectClientSuppliedPrice({ retailPrice, unitPrice, priceVersionId, priceVersion })
+  const versionId = readPriceVersionId(priceVersionId)
   const quote = quoteCard(productType, quantity)
   return {
     id: String(orderId),
@@ -40,6 +70,7 @@ export function createPendingCardOrder({
     blp: quote.totals.blp,
     ubuntuAfriqueGross: quote.totals.ubuntuAfriqueGross,
     sponsorId: sponsorId ? String(sponsorId) : "",
+    ...(versionId ? { priceVersionId: versionId } : {}),
     status: "PENDING_PAYMENT",
     quote,
   }
@@ -53,7 +84,13 @@ export function createPendingFractionOrder({
   aureusPhase,
   remainingUnderlying,
   sponsorId = "",
+  priceVersion = "",
+  retailPrice,
+  unitPrice,
+  priceVersionId,
 }) {
+  rejectClientSuppliedPrice({ retailPrice, unitPrice, priceVersionId, priceVersion })
+  const versionId = readPriceVersionId(priceVersion)
   const quote = quoteFractions({
     quantity,
     aureusSharePrice,
@@ -79,6 +116,7 @@ export function createPendingFractionOrder({
     allocationComponent: quote.allocationComponent,
     remainingUnderlying: quote.remainingUnderlying,
     sponsorId: sponsorId ? String(sponsorId) : "",
+    ...(versionId ? { priceVersion: versionId } : {}),
     status: "PENDING_PAYMENT",
     quote,
   }
@@ -98,6 +136,7 @@ export function pendingCardInsert(order) {
     qv: order.qv,
     order_status: "PENDING_PAYMENT",
     sponsor_id: order.sponsorId || null,
+    ...(order.priceVersionId ? { price_version_id: readPriceVersionId(order.priceVersionId) } : {}),
   }
 }
 
@@ -118,6 +157,7 @@ export function pendingFractionInsert(order) {
     qv: order.qv,
     transaction_status: "PENDING_PAYMENT",
     sponsor_id: order.sponsorId || null,
+    ...(order.priceVersion ? { price_version: readPriceVersionId(order.priceVersion) } : {}),
   }
 }
 
@@ -131,6 +171,7 @@ export function orderFromCardRow(row) {
     productType: String(row.product_id || ""),
     quantity: Number(row.quantity || 1),
     sponsorId: String(row.sponsor_id || ""),
+    priceVersionId: row.price_version_id || "",
   })
 }
 
@@ -146,6 +187,7 @@ export function orderFromFractionRow(row, remainingUnderlying) {
     aureusPhase: Number(row.aureus_phase || 10),
     remainingUnderlying,
     sponsorId: String(row.sponsor_id || ""),
+    priceVersion: row.price_version || "",
   })
 }
 

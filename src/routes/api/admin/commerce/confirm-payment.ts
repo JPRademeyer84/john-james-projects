@@ -4,6 +4,7 @@ import { getUbuntuServerClient, loadGapCoverMembers, loadUbuntuUser } from "../.
 import { persistGapCoverResult } from "../../../../lib/persistGap.server"
 import { persistConfirmVolume } from "../../../../lib/persistVolume.server"
 import { persistFractionInventory } from "../../../../lib/persistInventory.server"
+import { addMoney, formatMoney2, parseMoney } from "../../../../lib/money.mjs"
 
 function authorizeConfirm(request: Request, body: Record<string, unknown>) {
   const expected = String(process.env.UA_COMMERCE_CONFIRM_SECRET || "")
@@ -84,7 +85,23 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
               .select("remaining_underlying, sold_underlying")
               .eq("id", "AUREUS_100K")
               .maybeSingle()
-            order = orderFromFractionRow(existing, inventory?.remaining_underlying ? String(inventory.remaining_underlying) : undefined)
+            const { data: reserve, error: reserveError } = await ubuntu
+              .from("ua_aureus_liability_ledger")
+              .select("amount")
+              .eq("source_transaction_id", orderId)
+              .eq("entry_type", "FRACTION_RESERVE")
+              .maybeSingle()
+            if (reserveError && !String(reserveError.message || "").includes("does not exist")) {
+              throw new Error(reserveError.message)
+            }
+            let remainingForRebuild =
+              inventory?.remaining_underlying != null ? String(inventory.remaining_underlying) : undefined
+            if (reserve?.amount != null && remainingForRebuild != null) {
+              remainingForRebuild = formatMoney2(
+                addMoney(parseMoney(remainingForRebuild), parseMoney(String(reserve.amount)))
+              )
+            }
+            order = orderFromFractionRow(existing, remainingForRebuild)
             if (inventory?.sold_underlying != null) {
               order.soldUnderlying = String(inventory.sold_underlying)
             }

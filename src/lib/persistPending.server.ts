@@ -17,7 +17,10 @@ export async function persistPendingCardOrder(ubuntu: SupabaseClient, order: Rec
   if (existing) {
     return { row: existing, idempotent: true }
   }
-  const { error } = await ubuntu.from("ua_card_orders").insert(row)
+  const { error } = await ubuntu.from("ua_card_orders").insert({
+    ...row,
+    price_version_id: row.price_version_id ?? null,
+  })
   if (error) throw new Error(error.message)
   return { row, idempotent: false }
 }
@@ -38,7 +41,10 @@ export async function persistPendingFractionOrder(ubuntu: SupabaseClient, order:
   if (existing) {
     return { row: existing, idempotent: true }
   }
-  const { error } = await ubuntu.from("ua_fraction_transactions").insert(row)
+  const { error } = await ubuntu.from("ua_fraction_transactions").insert({
+    ...row,
+    price_version: row.price_version ?? null,
+  })
   if (error) throw new Error(error.message)
   return { row, idempotent: false }
 }

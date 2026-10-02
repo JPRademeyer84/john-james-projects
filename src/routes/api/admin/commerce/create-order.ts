@@ -1,7 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createPendingCardOrder, createPendingFractionOrder } from "../../../../lib/commerceOrders.mjs"
 import { persistPendingCardOrder, persistPendingFractionOrder } from "../../../../lib/persistPending.server"
+import { persistFractionReserve } from "../../../../lib/persistInventory.server"
+import { loadCurrentPriceVersion } from "../../../../lib/persistPricing.server"
 import { getUbuntuServerClient, loadActiveAureusPhase, loadUbuntuUser, loadUnderlyingInventory } from "../../../../lib/ubuntuServer.server"
+
+function clientSuppliedPrice(body: Record<string, unknown>) {
+  for (const key of ["priceVersionId", "priceVersion", "retailPrice", "unitPrice"] as const) {
+    const value = body[key]
+    if (value == null) continue
+    if (typeof value === "string" && value.trim() === "") continue
+    return true
+  }
+  return false
+}
 
 function authorizeCreate(request: Request, body: Record<string, unknown>) {
   const expected = String(process.env.UA_COMMERCE_CONFIRM_SECRET || "")
@@ -56,14 +68,25 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
           }, { status: inactive ? 403 : missing ? 404 : 400 })
         }
 
+        if (clientSuppliedPrice(body)) {
+          return Response.json({
+            ok: false,
+            error: "priceVersionId, priceVersion, retailPrice, and unitPrice are taken from Ubuntu price versions, not the client",
+            checkoutEnabled: false,
+          }, { status: 400 })
+        }
+
         try {
           if (kind === "CARD") {
+            const productType = String(body.productType || "")
+            const priceVersion = await loadCurrentPriceVersion(ubuntu, productType)
             const order = createPendingCardOrder({
               orderId: String(body.orderId || crypto.randomUUID()),
               userId: buyer.userId,
-              productType: String(body.productType || ""),
+              productType,
               quantity: Number(body.quantity || 1),
               sponsorId: String(body.sponsorId || ""),
+              priceVersionId: priceVersion.id,
             })
             const persisted = await persistPendingCardOrder(ubuntu, order)
             return Response.json({
@@ -93,9 +116,10 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
             }, { status: 400 })
           }
 
-          const [inventory, phase] = await Promise.all([
+          const [inventory, phase, priceVersion] = await Promise.all([
             loadUnderlyingInventory(ubuntu),
             loadActiveAureusPhase(ubuntu),
+            loadCurrentPriceVersion(ubuntu, "AUREUS_FRACTION"),
           ])
           const order = createPendingFractionOrder({
             orderId: String(body.orderId || crypto.randomUUID()),
@@ -105,15 +129,21 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
             aureusPhase: phase.phase,
             remainingUnderlying: inventory.remainingUnderlying,
             sponsorId: String(body.sponsorId || ""),
+            priceVersion: priceVersion.id,
           })
           const persisted = await persistPendingFractionOrder(ubuntu, order)
+          const reserved = await persistFractionReserve(ubuntu, {
+            sourceTransactionId: order.id,
+            underlyingShareEquivalent: order.underlyingShareEquivalent,
+          })
           return Response.json({
             ok: true,
             order,
             inventory,
             phase,
             persisted: true,
-            idempotent: Boolean(persisted.idempotent),
+            reserved: true,
+            idempotent: Boolean(persisted.idempotent || reserved.idempotent),
             checkoutEnabled: false,
           })
         } catch (err) {

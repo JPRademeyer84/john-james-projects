@@ -24,6 +24,7 @@ export function processGapCover({ commissionableValue, members, scheduleId = "ST
 
   const maxEntitlement = parseMoney(schedule.maxEntitlement)
   let highestPaid = parseMoney("0")
+  let absorbedUnclaimed = parseMoney("0")
   const payments = []
 
   for (const member of members) {
@@ -32,6 +33,12 @@ export function processGapCover({ commissionableValue, members, scheduleId = "ST
     if (compareMoney(entitlement, highestPaid) <= 0) continue
 
     const gap = entitlement - highestPaid
+    if (member.isActive === false) {
+      absorbedUnclaimed += gap
+      highestPaid = entitlement
+      continue
+    }
+
     const amount = percentOf(value, formatPercentNumber(gap))
     payments.push({
       recipientId: String(member.userId),
@@ -46,7 +53,7 @@ export function processGapCover({ commissionableValue, members, scheduleId = "ST
     highestPaid = entitlement
   }
 
-  const unclaimedPercent = maxEntitlement - highestPaid
+  const unclaimedPercent = maxEntitlement - highestPaid + absorbedUnclaimed
   const unclaimedAmount = percentOf(value, formatPercentNumber(unclaimedPercent))
   const totalPaid = payments.reduce((sum, row) => addMoney(sum, parseMoney(row.amount)), 0n)
 

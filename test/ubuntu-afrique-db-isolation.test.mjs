@@ -121,6 +121,9 @@ const persistInventory = readFileSync(new URL("../src/lib/persistInventory.serve
 assert.match(persistInventory, /ua_underlying_inventory/, "inventory persist writes Ubuntu remaining")
 assert.match(persistInventory, /FRACTION_SALE/, "inventory consume is ledgered")
 assert.match(persistInventory, /exceeds remaining underlying/, "sold-through confirm is refused")
+assert.match(persistInventory, /persistFractionReserve/, "pending fraction can reserve Ubuntu inventory")
+assert.match(persistInventory, /FRACTION_RESERVE/, "reserve is ledgered separately from sale")
+assert.match(persistInventory, /convertReserveToSale/, "confirm converts a reserve without decrementing remaining again")
 assert.doesNotMatch(persistInventory, /fgubaqoftdeefcakejwu/, "inventory persist never targets Aureus")
 
 const fractionQuote = readFileSync(new URL("../src/routes/api/fractions/quote.ts", import.meta.url), "utf8")
@@ -163,6 +166,10 @@ assert.match(processApi, /loadUbuntuUser/, "commission process rechecks Ubuntu u
 assert.match(processApi, /not active/, "inactive seller cannot process commissions")
 assert.doesNotMatch(processApi, /fgubaqoftdeefcakejwu/, "commission process never targets Aureus")
 
+const gapEngine = readFileSync(new URL("../src/lib/gapCover.mjs", import.meta.url), "utf8")
+assert.match(gapEngine, /isActive === false/, "Gap Cover refuses payout to inactive recipients")
+assert.match(gapEngine, /absorbedUnclaimed/, "inactive Gap stays unclaimed with Ubuntu Afrique")
+
 const schema5 = readFileSync(new URL("../supabase/ubuntu-only/0005_ua_blp.sql", import.meta.url), "utf8")
 assert.match(schema5, /NEVER run this on Aureus production/, "0005 refuses Aureus")
 assert.match(schema5, /ua_blp_periods/, "BLP period table exists")
@@ -186,7 +193,34 @@ const persistPending = readFileSync(new URL("../src/lib/persistPending.server.ts
 assert.match(persistPending, /ua_card_orders/, "pending persist writes Ubuntu card orders")
 assert.match(persistPending, /ua_fraction_transactions/, "pending persist writes Ubuntu fraction transactions")
 assert.match(persistPending, /Ubuntu user not found/, "pending persist refuses a missing Ubuntu user id")
+assert.match(persistPending, /price_version_id/, "pending card persist passes price_version_id")
+assert.match(persistPending, /price_version(?!_id)/, "pending fraction persist passes price_version")
 assert.doesNotMatch(persistPending, /fgubaqoftdeefcakejwu/, "pending persist never targets Aureus")
+
+const persistPricing = readFileSync(new URL("../src/lib/persistPricing.server.ts", import.meta.url), "utf8")
+assert.match(persistPricing, /export async function loadCurrentPriceVersion/, "current price version loader exists")
+assert.match(persistPricing, /ua_product_price_versions/, "price version loader reads Ubuntu price versions")
+assert.match(persistPricing, /end_date/, "price version loader keeps the open version")
+assert.match(persistPricing, /effective_date/, "price version loader orders by effective date")
+assert.match(persistPricing, /ua_products/, "missing price version is snapshotted from ua_products")
+assert.doesNotMatch(persistPricing, /fgubaqoftdeefcakejwu/, "price version loader never targets Aureus")
+
+const commerceOrders = readFileSync(new URL("../src/lib/commerceOrders.mjs", import.meta.url), "utf8")
+assert.match(commerceOrders, /price_version_id/, "pending card insert stores price_version_id")
+assert.match(commerceOrders, /price_version(?!_id)/, "pending fraction insert stores price_version")
+assert.match(commerceOrders, /taken from Ubuntu price versions, not the client/, "order create rejects a client price")
+
+assert.match(createOrder, /loadCurrentPriceVersion/, "admin create loads the Ubuntu price version")
+assert.match(createOrder, /persistFractionReserve/, "admin fraction create reserves Ubuntu inventory")
+assert.match(createOrder, /taken from Ubuntu price versions, not the client/, "admin create rejects client priceVersion")
+assert.match(createOrder, /body\[key\]/, "admin create inspects client priceVersion fields")
+assert.doesNotMatch(createOrder, /unit_price:\s*body/, "admin create does not persist a client unit price")
+
+const schema8 = readFileSync(new URL("../supabase/ubuntu-only/0008_ua_price_version_seeds.sql", import.meta.url), "utf8")
+assert.match(schema8, /NEVER run on Aureus fgubaqoftdeefcakejwu/, "0008 refuses Aureus")
+assert.match(schema8, /INSERT INTO public\.ua_product_price_versions/, "0008 inserts price versions from ua_products")
+assert.match(schema8, /end_date IS NULL/, "0008 inserts a version only when none is open")
+assert.doesNotMatch(schema8, /CREATE TABLE/, "0008 does not recreate tables")
 
 const persistVolume = readFileSync(new URL("../src/lib/persistVolume.server.ts", import.meta.url), "utf8")
 assert.match(persistVolume, /monthly_team_qv/, "confirm persist credits monthly team QV")

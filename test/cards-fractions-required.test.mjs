@@ -1,7 +1,13 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { quoteCard } from "../src/lib/cardEconomics.mjs"
-import { consumeUnderlyingInventory, phaseAvailability, quoteFractions } from "../src/lib/fractionEngine.mjs"
+import {
+  consumeUnderlyingInventory,
+  convertReserveToSale,
+  phaseAvailability,
+  quoteFractions,
+  reserveUnderlyingInventory,
+} from "../src/lib/fractionEngine.mjs"
 
 test("133 plastic card $100: cost 55, gap 25, BLP 5, gross 15", () => {
   const quote = quoteCard("CARD_PLASTIC", 1)
@@ -83,5 +89,65 @@ test("fraction confirm consumes 0.05 remaining and refuses when sold through", (
         underlyingShareEquivalent: "0.05",
       }),
     /exceeds remaining underlying/
+  )
+})
+
+test("fraction reserve holds underlying without counting it sold", () => {
+  const reserved = reserveUnderlyingInventory({
+    remainingUnderlying: "100000.00",
+    underlyingShareEquivalent: "0.05",
+  })
+  assert.equal(reserved.remainingUnderlying, "99999.95")
+  assert.equal(reserved.reservedUnderlying, "0.05")
+  assert.equal(reserved.underlyingShareEquivalent, "0.05")
+  const stacked = reserveUnderlyingInventory({
+    remainingUnderlying: reserved.remainingUnderlying,
+    reservedUnderlying: reserved.reservedUnderlying,
+    underlyingShareEquivalent: "0.10",
+  })
+  assert.equal(stacked.remainingUnderlying, "99999.85")
+  assert.equal(stacked.reservedUnderlying, "0.15")
+  assert.throws(
+    () =>
+      reserveUnderlyingInventory({
+        remainingUnderlying: "0.04",
+        reservedUnderlying: "0",
+        underlyingShareEquivalent: "0.05",
+      }),
+    /exceeds remaining underlying/
+  )
+})
+
+test("confirm converts a reserve into a sale without decrementing remaining again", () => {
+  const reserved = reserveUnderlyingInventory({
+    remainingUnderlying: "100000.00",
+    reservedUnderlying: "0",
+    underlyingShareEquivalent: "0.05",
+  })
+  const sold = convertReserveToSale({
+    remainingUnderlying: reserved.remainingUnderlying,
+    reservedUnderlying: reserved.reservedUnderlying,
+    soldUnderlying: "0",
+    underlyingShareEquivalent: "0.05",
+  })
+  assert.equal(sold.remainingUnderlying, "99999.95")
+  assert.equal(sold.reservedUnderlying, "0.00")
+  assert.equal(sold.soldUnderlying, "0.05")
+  const direct = consumeUnderlyingInventory({
+    remainingUnderlying: "100000.00",
+    soldUnderlying: "0",
+    underlyingShareEquivalent: "0.05",
+  })
+  assert.equal(sold.remainingUnderlying, direct.remainingUnderlying)
+  assert.equal(sold.soldUnderlying, direct.soldUnderlying)
+  assert.throws(
+    () =>
+      convertReserveToSale({
+        remainingUnderlying: sold.remainingUnderlying,
+        reservedUnderlying: sold.reservedUnderlying,
+        soldUnderlying: sold.soldUnderlying,
+        underlyingShareEquivalent: "0.05",
+      }),
+    /exceeds reserved underlying/
   )
 })

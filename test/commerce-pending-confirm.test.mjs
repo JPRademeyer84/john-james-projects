@@ -237,3 +237,58 @@ test("admin pending fraction insert rebuilds from the stored Ubuntu row", () => 
   assert.equal(paid.ownership.underlyingShareEquivalent, "0.05")
   assert.equal(paid.gapCover.totalPaid, "2.50")
 })
+
+test("pending insert stores price_version_id and price_version when provided", () => {
+  const cardVersionId = "11111111-2222-3333-4444-555555555555"
+  const fractionVersionId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+  const card = createPendingCardOrder({
+    orderId: "77777777-7777-7777-7777-777777777777",
+    userId: "9",
+    productType: "CARD_PLASTIC",
+    priceVersionId: cardVersionId,
+  })
+  const cardRow = pendingCardInsert(card)
+  assert.equal(card.priceVersionId, cardVersionId)
+  assert.equal(cardRow.price_version_id, cardVersionId)
+  assert.equal(cardRow.unit_price, "100.00")
+  const rebuiltCard = orderFromCardRow({ ...cardRow, unit_price: "1.00" })
+  assert.equal(rebuiltCard.priceVersionId, cardVersionId)
+  assert.equal(rebuiltCard.total, "100.00")
+
+  const fraction = createPendingFractionOrder({
+    orderId: "88888888-8888-8888-8888-888888888888",
+    userId: "9",
+    quantity: 1,
+    aureusSharePrice: "100.00",
+    aureusPhase: 10,
+    remainingUnderlying: "100000",
+    priceVersion: fractionVersionId,
+  })
+  const fractionRow = pendingFractionInsert(fraction)
+  assert.equal(fraction.priceVersion, fractionVersionId)
+  assert.equal(fractionRow.price_version, fractionVersionId)
+  const rebuiltFraction = orderFromFractionRow(fractionRow, "100000")
+  assert.equal(rebuiltFraction.priceVersion, fractionVersionId)
+
+  assert.throws(
+    () => createPendingCardOrder({
+      orderId: "99999999-9999-9999-9999-999999999999",
+      userId: "9",
+      productType: "CARD_PLASTIC",
+      retailPrice: "1.00",
+    }),
+    /Ubuntu price versions, not the client/
+  )
+  assert.throws(
+    () => createPendingFractionOrder({
+      orderId: "99999999-9999-9999-9999-999999999998",
+      userId: "9",
+      quantity: 1,
+      aureusSharePrice: "100.00",
+      aureusPhase: 10,
+      remainingUnderlying: "100000",
+      unitPrice: "1.00",
+    }),
+    /Ubuntu price versions, not the client/
+  )
+})

@@ -1,4 +1,4 @@
-import { MONEY_FACTOR, formatMoney2, parseMoney, percentOf } from "./money.mjs"
+import { MONEY_FACTOR, addMoney, compareMoney, formatMoney2, parseMoney, percentOf, subtractMoney } from "./money.mjs"
 
 export const FRACTION_UNIT_PRICE = "10.00"
 export const ALLOCATION_BASIS = "100.00"
@@ -92,6 +92,53 @@ export function consumeUnderlyingInventory({
   return {
     remainingUnderlying: formatMoney2(remaining - used),
     soldUnderlying: formatMoney2(sold + used),
+    underlyingShareEquivalent: formatMoney2(used),
+  }
+}
+
+function parsePositiveUnderlying(underlyingShareEquivalent) {
+  const used = parseMoney(underlyingShareEquivalent)
+  if (compareMoney(used, 0n) <= 0) {
+    throw new Error("underlyingShareEquivalent must be greater than zero")
+  }
+  return used
+}
+
+export function reserveUnderlyingInventory({
+  remainingUnderlying,
+  reservedUnderlying = "0",
+  underlyingShareEquivalent,
+}) {
+  const remaining = parseMoney(remainingUnderlying)
+  const reserved = parseMoney(reservedUnderlying)
+  const used = parsePositiveUnderlying(underlyingShareEquivalent)
+  if (compareMoney(used, remaining) > 0) {
+    throw new Error("Purchase exceeds remaining underlying share inventory")
+  }
+  return {
+    remainingUnderlying: formatMoney2(subtractMoney(remaining, used)),
+    reservedUnderlying: formatMoney2(addMoney(reserved, used)),
+    underlyingShareEquivalent: formatMoney2(used),
+  }
+}
+
+export function convertReserveToSale({
+  remainingUnderlying,
+  reservedUnderlying,
+  soldUnderlying,
+  underlyingShareEquivalent,
+}) {
+  const remaining = parseMoney(remainingUnderlying)
+  const reserved = parseMoney(reservedUnderlying)
+  const sold = parseMoney(soldUnderlying)
+  const used = parsePositiveUnderlying(underlyingShareEquivalent)
+  if (compareMoney(used, reserved) > 0) {
+    throw new Error("Sale exceeds reserved underlying share inventory")
+  }
+  return {
+    remainingUnderlying: formatMoney2(remaining),
+    reservedUnderlying: formatMoney2(subtractMoney(reserved, used)),
+    soldUnderlying: formatMoney2(addMoney(sold, used)),
     underlyingShareEquivalent: formatMoney2(used),
   }
 }
