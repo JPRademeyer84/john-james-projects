@@ -59,7 +59,7 @@ export const Route = createFileRoute("/api/admin/blp/close-period")({
           return Response.json({ ok: false, error: "Open BLP period not found" }, { status: 404 })
         }
 
-        const members = await loadBlpMembers(ubuntu)
+        const members = (await loadBlpMembers(ubuntu)).filter((row) => row.isActive === true)
         let result
         try {
           result = distributeBlpPeriod({

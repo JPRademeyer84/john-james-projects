@@ -40,6 +40,29 @@ test("ASM pool splits by volume x weight; empty ranks stay unclaimed with Ubuntu
   assert.equal(result.unclaimedTotal, "3.50")
 })
 
+test("inactive Ubuntu members do not receive BLP payout; their pool share stays unclaimed", () => {
+  const result = distributeBlpPeriod({
+    periodId: "2026-10",
+    commissionableSales: "100.00",
+    members: [
+      { userId: "a1", rank: "ASM", qualifiedMonthlyVolume: "300.00", isActive: false },
+      { userId: "a2", rank: "ASM", qualifiedMonthlyVolume: "600.00", isActive: true },
+    ],
+  })
+  assert.equal(result.payouts.length, 1)
+  assert.equal(result.payouts[0].userId, "a2")
+  assert.equal(result.payouts[0].amount, "1.50")
+  assert.equal(result.unclaimed.ASM, "0.00")
+  const onlyInactive = distributeBlpPeriod({
+    periodId: "2026-10",
+    commissionableSales: "100.00",
+    members: [{ userId: "a1", rank: "ASM", qualifiedMonthlyVolume: "300.00", isActive: false }],
+  })
+  assert.equal(onlyInactive.payouts.length, 0)
+  assert.equal(onlyInactive.unclaimed.ASM, "1.50")
+  assert.equal(onlyInactive.unclaimedTotal, "5.00")
+})
+
 test("after BLP close, monthly team QV resets so last month cannot qualify next month", () => {
   const closed = resetMonthlyTeamQv([
     { userId: "a1", rank: "ASM", qualifiedMonthlyVolume: "600.00" },

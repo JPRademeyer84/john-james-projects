@@ -173,6 +173,7 @@ assert.match(blpClose, /UA_COMMERCE_CONFIRM_SECRET/, "BLP close is secret-gated"
 assert.match(blpClose, /Client-supplied rank chains are rejected/, "BLP close rejects client rank chains")
 assert.match(blpClose, /distributeBlpPeriod/, "BLP close uses the shared BLP engine")
 assert.match(blpClose, /loadBlpMembers/, "BLP members load from Ubuntu ranks and monthly volume")
+assert.match(blpClose, /isActive === true/, "BLP close pays only active Ubuntu members")
 assert.match(blpClose, /taken from the open Ubuntu BLP period/, "close rejects client-supplied BLP sales")
 assert.match(blpClose, /commissionable_sales/, "close distributes from stored period sales")
 assert.match(blpClose, /monthlyVolumeReset/, "close reports monthly team QV reset")
@@ -210,5 +211,6 @@ const ubuntuServer = readFileSync(new URL("../src/lib/ubuntuServer.server.ts", i
 assert.match(ubuntuServer, /Aureus production/, "commission API refuses Aureus writes")
 assert.match(ubuntuServer, /loadBlpMembers/, "BLP member loader exists")
 assert.match(ubuntuServer, /monthly_team_qv/, "BLP qualification uses monthly team QV")
+assert.match(ubuntuServer, /loadBlpMembers[\s\S]*is_active/, "BLP loader reads Ubuntu ua_users.is_active")
 
 console.log("ubuntu-afrique-db-isolation.test.mjs: OK")

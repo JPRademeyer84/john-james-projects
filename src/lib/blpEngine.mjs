@@ -45,6 +45,7 @@ export function distributeBlpPeriod({
   for (const [rank, spec] of Object.entries(BLP_POOLS)) {
     const poolAmount = parseMoney(contribution.pools[rank])
     const eligible = members.filter((member) => {
+      if (member.isActive === false) return false
       return String(member.rank || "").toUpperCase() === rank && isBlpQualified(rank, member.qualifiedMonthlyVolume)
     })
 
