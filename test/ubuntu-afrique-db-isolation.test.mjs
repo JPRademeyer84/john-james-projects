@@ -109,6 +109,8 @@ assert.match(confirmPay, /persistConfirmVolume/, "confirm credits monthly QV and
 assert.match(confirmPay, /Pending order not found/, "confirm requires a real persisted pending row")
 assert.match(confirmPay, /orderFromCardRow|orderFromFractionRow/, "confirm rebuilds from the Ubuntu row, not client product fields")
 assert.match(confirmPay, /persistFractionInventory/, "fraction confirm decrements Ubuntu remaining inventory")
+assert.match(confirmPay, /loadUbuntuUser/, "confirm rechecks Ubuntu ua_users before settle")
+assert.match(confirmPay, /not active/, "inactive Ubuntu user cannot be confirmed")
 assert.doesNotMatch(confirmPay, /\/dashboard\/invest/, "confirm API is not the public invest page")
 
 const schema7 = readFileSync(new URL("../supabase/ubuntu-only/0007_ua_fraction_inventory.sql", import.meta.url), "utf8")

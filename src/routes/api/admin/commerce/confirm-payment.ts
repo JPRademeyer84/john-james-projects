@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { confirmCommercePayment, orderFromCardRow, orderFromFractionRow } from "../../../../lib/commerceOrders.mjs"
-import { getUbuntuServerClient, loadGapCoverMembers } from "../../../../lib/ubuntuServer.server"
+import { getUbuntuServerClient, loadGapCoverMembers, loadUbuntuUser } from "../../../../lib/ubuntuServer.server"
 import { persistGapCoverResult } from "../../../../lib/persistGap.server"
 import { persistConfirmVolume } from "../../../../lib/persistVolume.server"
 import { persistFractionInventory } from "../../../../lib/persistInventory.server"
@@ -58,6 +58,20 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
             order: { id: orderId, status: "PAID", paymentId: existing.payment_id || paymentId },
             idempotent: true,
           })
+        }
+
+        const buyerId = kind === "CARD" ? existing.user_id : existing.buyer_id
+        try {
+          await loadUbuntuUser(ubuntu, String(buyerId || ""))
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Ubuntu user not found"
+          const inactive = message.includes("not active")
+          const missing = message.includes("not found") || message.includes("ua_users.id")
+          return Response.json({
+            ok: false,
+            error: message,
+            checkoutEnabled: false,
+          }, { status: inactive ? 403 : missing ? 404 : 400 })
         }
 
         let order
