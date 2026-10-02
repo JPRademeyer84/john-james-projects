@@ -9,6 +9,7 @@ import {
   pendingCardInsert,
   pendingFractionInsert,
   requireUbuntuUserId,
+  assertUbuntuUserActive,
 } from "../src/lib/commerceOrders.mjs"
 import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
 
@@ -140,6 +141,9 @@ test("admin create requires a positive integer Ubuntu ua_users.id", () => {
   assert.throws(() => requireUbuntuUserId(""), /ua_users\.id/)
   assert.throws(() => requireUbuntuUserId("buyer"), /ua_users\.id/)
   assert.throws(() => requireUbuntuUserId("0"), /ua_users\.id/)
+  assert.deepEqual(assertUbuntuUserActive({ userId: "9", isActive: true }), { userId: "9", isActive: true })
+  assert.throws(() => assertUbuntuUserActive({ userId: "9", isActive: false }), /not active/)
+  assert.throws(() => assertUbuntuUserActive({ userId: "9" }), /not active/)
   assert.equal(pendingCardInsert(createPendingCardOrder({
     orderId: "55555555-5555-5555-5555-555555555555",
     userId: "9",

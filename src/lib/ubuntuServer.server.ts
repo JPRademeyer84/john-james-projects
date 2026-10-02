@@ -118,10 +118,13 @@ export async function loadUbuntuUser(ubuntu: SupabaseClient, userId: string | nu
   if (!Number.isInteger(id) || id <= 0) {
     throw new Error("userId must be an existing Ubuntu ua_users.id")
   }
-  const { data, error } = await ubuntu.from("ua_users").select("id").eq("id", id).maybeSingle()
+  const { data, error } = await ubuntu.from("ua_users").select("id, is_active").eq("id", id).maybeSingle()
   if (error) throw new Error(error.message)
   if (!data) {
     throw new Error("Ubuntu user not found")
   }
-  return { userId: String(data.id) }
+  if (data.is_active !== true) {
+    throw new Error("Ubuntu user is not active")
+  }
+  return { userId: String(data.id), isActive: true }
 }

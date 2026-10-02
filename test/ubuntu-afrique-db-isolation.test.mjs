@@ -97,6 +97,7 @@ assert.match(createOrder, /taken from Ubuntu ua_aureus_phases/, "admin fraction 
 assert.match(createOrder, /checkoutEnabled: false/, "admin create keeps checkout closed")
 assert.match(createOrder, /loadUbuntuUser/, "admin create requires an existing Ubuntu ua_users.id")
 assert.match(createOrder, /Ubuntu user not found/, "missing Ubuntu user is refused")
+assert.match(createOrder, /not active/, "inactive Ubuntu user is refused")
 assert.doesNotMatch(createOrder, /body\.aureusSharePrice \|\| "100\.00"/, "admin create does not default a client phase price")
 assert.doesNotMatch(createOrder, /fgubaqoftdeefcakejwu/, "admin create never targets Aureus")
 
@@ -150,6 +151,8 @@ assert.match(ubuntuServerAfter, /loadActiveAureusPhase/, "Ubuntu active phase lo
 assert.match(ubuntuServerAfter, /ua_aureus_phases/, "phase loader reads Ubuntu ua_aureus_phases")
 assert.match(ubuntuServerAfter, /loadUbuntuUser/, "Ubuntu user loader exists")
 assert.match(ubuntuServerAfter, /from\("ua_users"\)/, "user loader reads Ubuntu ua_users")
+assert.match(ubuntuServerAfter, /is_active/, "user loader checks Ubuntu is_active")
+assert.match(ubuntuServerAfter, /Ubuntu user is not active/, "inactive users are refused")
 
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")

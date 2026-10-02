@@ -11,6 +11,13 @@ export function requireUbuntuUserId(userId) {
   return id
 }
 
+export function assertUbuntuUserActive(user) {
+  if (!user || user.isActive !== true) {
+    throw new Error("Ubuntu user is not active")
+  }
+  return user
+}
+
 export function createPendingCardOrder({
   orderId,
   userId,

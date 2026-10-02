@@ -47,8 +47,13 @@ export const Route = createFileRoute("/api/admin/commerce/create-order")({
           buyer = await loadUbuntuUser(ubuntu, String(body.userId || ""))
         } catch (err) {
           const message = err instanceof Error ? err.message : "Ubuntu user not found"
+          const inactive = message.includes("not active")
           const missing = message.includes("not found") || message.includes("ua_users.id")
-          return Response.json({ ok: false, error: message, checkoutEnabled: false }, { status: missing ? 404 : 400 })
+          return Response.json({
+            ok: false,
+            error: message,
+            checkoutEnabled: false,
+          }, { status: inactive ? 403 : missing ? 404 : 400 })
         }
 
         try {
