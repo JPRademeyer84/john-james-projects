@@ -364,3 +364,48 @@ export function confirmCommercePayment({
 
   return confirmed
 }
+
+export function reverseCardOrder({ order, reason = "" }) {
+  if (!order || order.kind !== "CARD") {
+    throw new Error("card order is required")
+  }
+  if (order.status === "REFUNDED") {
+    return order
+  }
+  if (order.status !== "PAID") {
+    throw new Error("Card refund requires a PAID order")
+  }
+  if (!order.fulfilmentStatus) {
+    throw new Error("Card refund requires fulfilment to exist")
+  }
+  if (!order.gapCover || !Array.isArray(order.gapCover.payments)) {
+    throw new Error("Card refund requires posted Gap Cover")
+  }
+
+  const gapReversals = order.gapCover.payments.map((payment) => ({
+    recipientId: String(payment.recipientId),
+    recipientRank: String(payment.recipientRank),
+    commissionType: "REVERSAL",
+    previousEntitlement: payment.previousEntitlement,
+    newEntitlement: payment.newEntitlement,
+    gapPercentage: payment.gapPercentage,
+    amount: formatMoney2(-parseMoney(payment.amount)),
+    compPlanVersion: payment.compPlanVersion || order.gapCover.compPlanVersion,
+  }))
+
+  return {
+    ...order,
+    status: "REFUNDED",
+    fulfilmentStatus: "REFUNDED",
+    reversal: {
+      sourceTransactionId: String(order.id),
+      reversalType: "CARD_REFUND",
+      amount: order.total,
+      qvReversed: order.qv,
+      blpReversed: order.blpAccrual?.blpAdded || order.blp || "0.00",
+      commissionableReversed: order.commissionableValue,
+      gapReversals,
+      reason: String(reason || ""),
+    },
+  }
+}

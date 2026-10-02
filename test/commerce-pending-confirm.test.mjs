@@ -12,6 +12,7 @@ import {
   assertUbuntuUserActive,
   applyPriceVersionSnapshot,
   advanceCardFulfilment,
+  reverseCardOrder,
 } from "../src/lib/commerceOrders.mjs"
 import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
 
@@ -319,6 +320,29 @@ test("pending unit and total come from the Ubuntu price-version snapshot", () =>
   assert.equal(row.unit_price, "100.00")
   assert.equal(row.total, "100.00")
   assert.equal(orderFromCardRow(row).total, "100.00")
+})
+
+test("card refund creates reversal records after fulfilment exists and does not delete the original", () => {
+  const pending = createPendingCardOrder({
+    orderId: "cdcdecdc-ecdc-ecdc-ecdc-ecdecdcdecdc",
+    userId: "9",
+    productType: "CARD_PLASTIC",
+  })
+  assert.throws(() => reverseCardOrder({ order: pending }), /PAID order/)
+  const paid = confirmCommercePayment({ order: pending, paymentId: "PAY-R1", members: chain })
+  const refunded = reverseCardOrder({ order: paid, reason: "test refund" })
+  assert.equal(refunded.status, "REFUNDED")
+  assert.equal(refunded.fulfilmentStatus, "REFUNDED")
+  assert.equal(paid.status, "PAID")
+  assert.equal(paid.gapCover.totalPaid, "25.00")
+  assert.equal(refunded.reversal.reversalType, "CARD_REFUND")
+  assert.equal(refunded.reversal.amount, "100.00")
+  assert.equal(refunded.reversal.qvReversed, "100.00")
+  assert.equal(refunded.reversal.gapReversals.length, 5)
+  assert.equal(refunded.reversal.gapReversals[0].amount, "-10.00")
+  assert.equal(refunded.reversal.gapReversals.reduce((sum, row) => sum + Number(row.amount), 0), -25)
+  const again = reverseCardOrder({ order: refunded })
+  assert.equal(again.status, "REFUNDED")
 })
 
 test("card fulfilment starts at PROCESSING after PAID and advances one step", () => {

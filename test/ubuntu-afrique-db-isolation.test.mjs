@@ -236,6 +236,25 @@ assert.match(cardStatus, /Card fulfilment starts after PAID/, "fulfilment cannot
 assert.match(cardStatus, /checkoutEnabled: false/, "card status keeps checkout closed")
 assert.doesNotMatch(cardStatus, /fgubaqoftdeefcakejwu/, "card status never targets Aureus")
 
+const schema10 = readFileSync(new URL("../supabase/ubuntu-only/0010_ua_transaction_reversals.sql", import.meta.url), "utf8")
+assert.match(schema10, /NEVER run this on Aureus production/, "0010 refuses Aureus")
+assert.match(schema10, /ua_transaction_reversals/, "0010 adds reversal records")
+assert.match(schema10, /ua_reversal_source_type/, "refund reversal is unique per order")
+
+const persistRefund = readFileSync(new URL("../src/lib/persistRefund.server.ts", import.meta.url), "utf8")
+assert.match(persistRefund, /ua_transaction_reversals/, "refund persist writes reversal records")
+assert.match(persistRefund, /entry_type: "REVERSAL"/, "refund persist posts wallet reversals")
+assert.match(persistRefund, /commission_type: "REVERSAL"/, "refund persist posts commission reversals")
+assert.doesNotMatch(persistRefund, /\.delete\(/, "refund persist does not delete original financial rows")
+assert.doesNotMatch(persistRefund, /fgubaqoftdeefcakejwu/, "refund persist never targets Aureus")
+
+const cardRefund = readFileSync(new URL("../src/routes/api/admin/cards/refund.ts", import.meta.url), "utf8")
+assert.match(cardRefund, /UA_COMMERCE_CONFIRM_SECRET/, "card refund is secret-gated")
+assert.match(cardRefund, /reverseCardOrder/, "card refund uses the shared reversal path")
+assert.match(cardRefund, /Card refund requires fulfilment to exist/, "refund refuses before fulfilment")
+assert.match(cardRefund, /checkoutEnabled: false/, "card refund keeps checkout closed")
+assert.doesNotMatch(cardRefund, /fgubaqoftdeefcakejwu/, "card refund never targets Aureus")
+
 const persistVolume = readFileSync(new URL("../src/lib/persistVolume.server.ts", import.meta.url), "utf8")
 assert.match(persistVolume, /monthly_team_qv/, "confirm persist credits monthly team QV")
 assert.match(persistVolume, /ua_blp_contributions/, "confirm persist accrues open BLP period")
