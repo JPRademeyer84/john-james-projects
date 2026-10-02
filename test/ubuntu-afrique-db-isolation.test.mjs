@@ -454,6 +454,18 @@ assert.match(adminNftRecon, /loadNftRecon/, "admin NFT recon reads Ubuntu NFT le
 assert.match(adminNftRecon, /checkoutEnabled: false/, "admin NFT recon keeps checkout closed")
 assert.doesNotMatch(adminNftRecon, /fgubaqoftdeefcakejwu/, "admin NFT recon never targets Aureus")
 
+const schema19 = readFileSync(new URL("../supabase/ubuntu-only/0019_ua_admin_alerts.sql", import.meta.url), "utf8")
+assert.match(schema19, /NEVER run this on Aureus production/, "0019 refuses Aureus")
+assert.match(schema19, /ua_admin_alerts/, "0019 adds Ubuntu admin alerts")
+
+const adminAlerts = readFileSync(new URL("../src/routes/api/admin/alerts.ts", import.meta.url), "utf8")
+assert.match(adminAlerts, /UA_COMMERCE_CONFIRM_SECRET/, "admin alerts are secret-gated")
+assert.match(adminAlerts, /checkoutEnabled: false/, "admin alerts keep checkout closed")
+assert.doesNotMatch(adminAlerts, /fgubaqoftdeefcakejwu/, "admin alerts never target Aureus")
+
+assert.match(confirmPay, /persistAdminAlert/, "confirm-payment records payment/commission/inventory alerts")
+assert.match(processApi, /persistAdminAlert/, "commission process records commission alerts")
+
 const schema18 = readFileSync(new URL("../supabase/ubuntu-only/0018_ua_marketplace_media.sql", import.meta.url), "utf8")
 assert.match(schema18, /NEVER run this on Aureus production/, "0018 refuses Aureus")
 assert.match(schema18, /ua_marketplace_media/, "0018 adds Ubuntu marketplace media")

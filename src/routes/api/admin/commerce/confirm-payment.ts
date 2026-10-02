@@ -5,6 +5,7 @@ import { persistGapCoverResult } from "../../../../lib/persistGap.server"
 import { persistConfirmVolume } from "../../../../lib/persistVolume.server"
 import { persistFractionInventory } from "../../../../lib/persistInventory.server"
 import { loadPaymentEvent } from "../../../../lib/persistPayment.server"
+import { persistAdminAlert } from "../../../../lib/persistAlert.server"
 import { assertPaymentCurrency, assertRecordedPaymentForConfirm } from "../../../../lib/paymentAdapter.mjs"
 import { addMoney, formatMoney2, parseMoney } from "../../../../lib/money.mjs"
 
@@ -93,6 +94,12 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
         } catch (err) {
           const message = err instanceof Error ? err.message : "Recorded payment event is required"
           const missing = message.includes("required")
+          await persistAdminAlert(ubuntu, {
+            type: "PAYMENT",
+            source: "/api/admin/commerce/confirm-payment",
+            reference: paymentId,
+            message,
+          }).catch(() => undefined)
           return Response.json({
             ok: false,
             error: message,
@@ -179,7 +186,14 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
         try {
           confirmed = confirmCommercePayment({ order, paymentId, members, uplineUserIds })
         } catch (err) {
-          return Response.json({ ok: false, error: err instanceof Error ? err.message : "Confirm failed" }, { status: 400 })
+          const message = err instanceof Error ? err.message : "Confirm failed"
+          await persistAdminAlert(ubuntu, {
+            type: "PAYMENT",
+            source: "/api/admin/commerce/confirm-payment",
+            reference: paymentId,
+            message,
+          }).catch(() => undefined)
+          return Response.json({ ok: false, error: message }, { status: 400 })
         }
 
         if (ubuntu && confirmed.gapCover) {
@@ -226,7 +240,17 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
               await persistConfirmVolume(ubuntu, confirmed.volume)
             }
           } catch (err) {
-            return Response.json({ ok: false, error: err instanceof Error ? err.message : "Persist failed" }, { status: 500 })
+            const message = err instanceof Error ? err.message : "Persist failed"
+            const type = message.toLowerCase().includes("inventory") || message.toLowerCase().includes("underlying")
+              ? "INVENTORY"
+              : "COMMISSION"
+            await persistAdminAlert(ubuntu, {
+              type,
+              source: "/api/admin/commerce/confirm-payment",
+              reference: paymentId,
+              message,
+            }).catch(() => undefined)
+            return Response.json({ ok: false, error: message }, { status: 500 })
           }
         }
 
