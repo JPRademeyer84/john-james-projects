@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { processGapCover } from "../../../lib/gapCover.mjs"
-import { getUbuntuServerClient, loadGapCoverMembers } from "../../../lib/ubuntuServer.server"
+import { getUbuntuServerClient, loadGapCoverMembers, loadUbuntuUser } from "../../../lib/ubuntuServer.server"
 
 export const Route = createFileRoute("/api/commissions/process")({
   server: {
@@ -44,6 +44,19 @@ export const Route = createFileRoute("/api/commissions/process")({
           if (prior?.response) {
             return Response.json(prior.response)
           }
+        }
+
+        try {
+          await loadUbuntuUser(ubuntu, sellerId)
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Ubuntu user not found"
+          const inactive = message.includes("not active")
+          const missing = message.includes("not found") || message.includes("ua_users.id")
+          return Response.json({
+            ok: false,
+            error: message,
+            checkoutEnabled: false,
+          }, { status: inactive ? 403 : missing ? 404 : 400 })
         }
 
         const members = await loadGapCoverMembers(ubuntu, sellerId)

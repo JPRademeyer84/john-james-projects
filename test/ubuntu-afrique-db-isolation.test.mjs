@@ -159,6 +159,9 @@ assert.match(ubuntuServerAfter, /Ubuntu user is not active/, "inactive users are
 const processApi = readFileSync(new URL("../src/routes/api/commissions/process.ts", import.meta.url), "utf8")
 assert.match(processApi, /processGapCover/, "shared Gap Cover engine is the only processor")
 assert.match(processApi, /getUbuntuServerClient/, "commission writes use the Ubuntu server client")
+assert.match(processApi, /loadUbuntuUser/, "commission process rechecks Ubuntu ua_users")
+assert.match(processApi, /not active/, "inactive seller cannot process commissions")
+assert.doesNotMatch(processApi, /fgubaqoftdeefcakejwu/, "commission process never targets Aureus")
 
 const schema5 = readFileSync(new URL("../supabase/ubuntu-only/0005_ua_blp.sql", import.meta.url), "utf8")
 assert.match(schema5, /NEVER run this on Aureus production/, "0005 refuses Aureus")
