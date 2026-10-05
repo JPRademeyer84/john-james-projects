@@ -521,6 +521,24 @@ assert.match(schema17, /ua_fraction_transactions_phase/, "0017 indexes phase id"
 assert.doesNotMatch(schema17, /CREATE TABLE/, "0017 does not create tables")
 assert.doesNotMatch(schema17, /INSERT INTO/, "0017 does not write rows")
 
+const schema20 = readFileSync(new URL("../supabase/ubuntu-only/0020_ua_kyc_admin_roles.sql", import.meta.url), "utf8")
+assert.match(schema20, /NEVER run this on Aureus production/, "0020 refuses Aureus")
+assert.match(schema20, /ua_kyc_profiles/, "0020 adds Ubuntu KYC profiles")
+assert.match(schema20, /ua_admin_roles/, "0020 adds Ubuntu admin roles")
+assert.match(schema20, /ua_admin_audit_log/, "0020 adds Ubuntu admin audit")
+assert.doesNotMatch(schema20, /fgubaqoftdeefcakejwu\.supabase/, "0020 never targets Aureus as a write URL")
+
+const kycEngine = readFileSync(new URL("../src/lib/ubuntuKyc.mjs", import.meta.url), "utf8")
+assert.match(kycEngine, /PENDING/, "KYC engine has pending")
+assert.match(kycEngine, /COMPLETED/, "KYC engine has completed")
+assert.match(kycEngine, /REJECTED/, "KYC engine has rejected")
+assert.match(kycEngine, /authorizeUbuntuAdmin/, "admin auth accepts role or secret")
+assert.doesNotMatch(kycEngine, /fgubaqoftdeefcakejwu/, "KYC engine never targets Aureus")
+
+const memberKyc = readFileSync(new URL("../src/routes/api/member/kyc.ts", import.meta.url), "utf8")
+assert.match(memberKyc, /checkoutEnabled: false/, "member KYC keeps checkout closed")
+assert.doesNotMatch(memberKyc, /fgubaqoftdeefcakejwu/, "member KYC never targets Aureus")
+
 const marketSettle = readFileSync(new URL("../src/lib/marketplaceSettlement.mjs", import.meta.url), "utf8")
 assert.match(marketSettle, /processGapCover/, "marketplace settlement uses shared Gap Cover")
 assert.match(marketSettle, /STANDARD_25/, "marketplace settlement is STANDARD_25 only")
