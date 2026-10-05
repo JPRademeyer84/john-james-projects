@@ -1,6 +1,10 @@
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 
+const identityLock = readFileSync(new URL("../IDENTITY.md", import.meta.url), "utf8")
+assert.match(identityLock, /No Post On Sunday/, "Wave F identity lock names the actor")
+assert.match(identityLock, /Do not push/, "Wave F identity lock forbids origin push")
+
 const supabase = readFileSync(new URL("../src/lib/supabase.ts", import.meta.url), "utf8")
 assert.match(supabase, /ubuntu\.from\(["']ua_users["']\)\.insert/, "signup writes Ubuntu ua_users only")
 assert.match(supabase, /pending_aureus_provision:\s*true/, "new Ubuntu users are queued for Aureus identity, not written live")
