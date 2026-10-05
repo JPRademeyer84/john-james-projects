@@ -1,44 +1,45 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { TrendingUp, Users, Coins, ArrowRight } from "lucide-react";
-import { auth } from "../../lib/supabase";
-import {
-  isAureusAdmin,
-  loadUbuntuMemberByAuthId,
-} from "../../lib/aureusMember";
+import { Coins, Layers, Trophy, Wallet } from "lucide-react";
+import { auth, ubuntuDb } from "../../lib/supabase";
+import { isAureusAdmin } from "../../lib/aureusMember";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardPage,
 });
 
-interface DashboardData {
-  identitySource: "aureus" | "ubuntu";
-  isAdmin: boolean;
-  user: {
-    username: string;
-    email: string;
-    referral_code: string;
+type MemberOverview = {
+  ok: boolean;
+  error?: string;
+  book?: string;
+  checkoutEnabled: boolean;
+  userId?: string;
+  username?: string;
+  email?: string;
+  currentRank?: string;
+  wallet?: { available: string; credits: string; reversals: string; byType: Record<string, string> };
+  cards?: { paidCount: number; paidTotal: string };
+  fractions?: { quantity: number; underlying: string };
+  volume?: { personalQv: string; teamQv: string; monthlyTeamQv: string };
+  progress?: {
+    currentRank: string;
+    nextRank: string | null;
+    entitlement: string;
+    progress: {
+      teamVolume: { have: string; need: string; met: boolean };
+      teamMembers: { have: number; need: number; met: boolean };
+      qualifiedLegs: { have: number; need: number; requiredRank: string | null; met: boolean };
+    };
   };
-  portfolio: {
-    total_shares: number;
-    total_invested: number;
-    current_value: number;
-  };
-  commissions: {
-    total_earned: number;
-    pending: number;
-    withdrawn: number;
-  };
-  referrals: {
-    direct: number;
-    total_team: number;
-  };
-}
+};
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [overview, setOverview] = useState<MemberOverview | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [displayName, setDisplayName] = useState("Member");
   const [loading, setLoading] = useState(true);
+  const [aureusReadOnlyNote, setAureusReadOnlyNote] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -59,85 +60,45 @@ function DashboardPage() {
       }
 
       if (current.identitySource === "aureus") {
-        const profile = current.profile
-        const ledger = current.ledger
-        if (!profile || !ledger) {
-          throw new Error("Aureus profile did not load. Sign in again.")
-        }
-        setData({
-          identitySource: "aureus",
-          isAdmin: isAureusAdmin(profile),
-          user: {
-            username: profile.username || "User",
-            email: profile.email || current.user.email || "",
-            referral_code: profile.username || "",
-          },
-          portfolio: {
-            total_shares: ledger.shares,
-            total_invested: ledger.invested,
-            current_value: ledger.invested,
-          },
-          commissions: {
-            total_earned: ledger.commissions,
-            pending: ledger.pending,
-            withdrawn: ledger.commissions - ledger.pending,
-          },
-          referrals: {
-            direct: 0,
-            total_team: 0,
-          },
-        });
-        return;
+        setAureusReadOnlyNote(true);
+        setIsAdmin(isAureusAdmin(current.profile));
+        setDisplayName(current.profile?.username || current.user.email || "Member");
+      } else {
+        setDisplayName(current.user.email || "Member");
       }
 
-      const userIdData = await loadUbuntuMemberByAuthId(current.user.id);
-      if (!userIdData) {
+      let token = typeof localStorage !== "undefined" ? localStorage.getItem("ua_session") : null;
+      if (!token) {
+        const { data } = await ubuntuDb.auth.getSession();
+        token = data.session?.access_token || null;
+      }
+      if (!token) {
         navigate({ to: "/auth/login" });
         return;
       }
 
-      const { ubuntu } = await import("../../lib/ubuntuDb");
-      const { data: investments } = await ubuntu
-        .from("ua_investments")
-        .select("amount, shares, status")
-        .eq("user_id", userIdData.id);
-
-      const totalShares = investments?.reduce((sum, inv) => sum + (inv.status === "approved" ? Number(inv.shares) : 0), 0) || 0;
-      const totalInvested = investments?.reduce((sum, inv) => sum + (inv.status === "approved" ? Number(inv.amount) : 0), 0) || 0;
-
-      const { data: commissions } = await ubuntu
-        .from("ua_commissions")
-        .select("amount, status")
-        .eq("user_id", userIdData.id);
-
-      const totalEarned = commissions?.reduce((sum, comm) => sum + comm.amount, 0) || 0;
-      const pending = commissions?.filter(c => c.status === 'pending').reduce((sum, comm) => sum + comm.amount, 0) || 0;
-
-      setData({
-        identitySource: "ubuntu",
-        isAdmin: false,
-        user: {
-          username: userIdData.username || "User",
-          email: userIdData.email || "",
-          referral_code: userIdData.pending_aureus_provision ? "Pending Aureus link" : "",
-        },
-        portfolio: {
-          total_shares: totalShares,
-          total_invested: totalInvested,
-          current_value: totalInvested * 1.125,
-        },
-        commissions: {
-          total_earned: totalEarned,
-          pending: pending,
-          withdrawn: totalEarned - pending,
-        },
-        referrals: {
-          direct: 0,
-          total_team: 0,
-        },
+      const res = await fetch("/api/member/ledger", {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      const json = await res.json();
+      setOverview({
+        ok: Boolean(json.ok),
+        error: json.error,
+        book: json.book,
+        checkoutEnabled: json.checkoutEnabled === true,
+        userId: json.userId,
+        username: json.username,
+        email: json.email,
+        currentRank: json.currentRank,
+        wallet: json.wallet,
+        cards: json.cards,
+        fractions: json.fractions,
+        volume: json.volume,
+        progress: json.progress,
+      });
+      if (json.username) setDisplayName(json.username);
     } catch (error) {
-      console.error("Failed to fetch dashboard data", error);
+      console.error("Failed to fetch Ubuntu member ledger", error);
     } finally {
       setLoading(false);
     }
@@ -151,13 +112,8 @@ function DashboardPage() {
     );
   }
 
-  if (!data) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-red-400">Failed to load dashboard</div>
-      </div>
-    );
-  }
+  const missingBook = !overview?.ok;
+  const progress = overview?.progress;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -173,9 +129,9 @@ function DashboardPage() {
           </div>
           <div className="flex items-center gap-6">
             <a href="/dashboard" className="text-sm font-medium text-gold">Dashboard</a>
-            <a href="/dashboard/invest" className="text-sm text-muted-foreground hover:text-foreground">Invest</a>
+            <a href="/dashboard/invest" className="text-sm text-muted-foreground hover:text-foreground">Fractions</a>
             <a href="/affiliate" className="text-sm text-muted-foreground hover:text-foreground">Affiliate</a>
-            {data.isAdmin && (
+            {isAdmin && (
               <a href="/admin" className="text-sm text-muted-foreground hover:text-foreground">Admin</a>
             )}
             <button onClick={handleSignOut} className="text-sm text-muted-foreground hover:text-foreground">Sign Out</button>
@@ -185,101 +141,92 @@ function DashboardPage() {
 
       <main className="mx-auto max-w-7xl px-6 py-12">
         <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold">Dashboard</h1>
+          <h1 className="font-display text-3xl font-bold">Member book</h1>
           <p className="mt-2 text-muted-foreground">
-            Welcome back, {data.user.username}
-            {data.identitySource === "aureus" ? " — Aureus Africa profile (read only)" : " — Ubuntu Afrique account"}
+            Welcome back, {overview?.username || displayName} — Ubuntu Afrique ledger
           </p>
+          {aureusReadOnlyNote && (
+            <p className="mt-2 text-sm text-gold/80">
+              Aureus Africa login is read-only. Money, rank, cards, and fractions on this page come from the Ubuntu book only.
+            </p>
+          )}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            icon={Coins}
-            label="Total Shares"
-            value={data.portfolio.total_shares.toLocaleString()}
-            subtext={`R${data.portfolio.total_invested.toLocaleString()} invested`}
-          />
-          <StatCard
-            icon={TrendingUp}
-            label="Portfolio Value"
-            value={`R${data.portfolio.current_value.toLocaleString()}`}
-            subtext="Current valuation"
-            trend="+12.5%"
-          />
-          <StatCard
-            icon={Coins}
-            label="Total Commissions"
-            value={`R${data.commissions.total_earned.toLocaleString()}`}
-            subtext={`R${data.commissions.pending.toLocaleString()} pending`}
-          />
-          <StatCard
-            icon={Users}
-            label="Referrals"
-            value={data.referrals.direct.toString()}
-            subtext={`${data.referrals.total_team} total team`}
-          />
-        </div>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-8">
-            <h2 className="font-display text-xl font-semibold">Investment Overview</h2>
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                <span className="text-sm text-muted-foreground">Shares Owned</span>
-                <span className="font-display text-lg font-semibold">{data.portfolio.total_shares.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                <span className="text-sm text-muted-foreground">Total Invested</span>
-                <span className="font-display text-lg font-semibold">R{data.portfolio.total_invested.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Current Value</span>
-                <span className="font-display text-lg font-semibold text-gold">R{data.portfolio.current_value.toLocaleString()}</span>
-              </div>
-            </div>
-            <a
-              href="/dashboard/invest"
-              className="mt-6 inline-flex items-center gap-2 rounded-md bg-gold-gradient px-6 py-3 font-semibold text-primary-foreground shadow-[var(--shadow-gold)] transition-transform hover:-translate-y-0.5"
-            >
-              Purchase More Shares <ArrowRight className="h-4 w-4" />
-            </a>
-          </div>
-
+        {missingBook ? (
           <div className="rounded-2xl border border-border bg-card p-8">
-            <h2 className="font-display text-xl font-semibold">Referral Code</h2>
-            <div className="mt-6 rounded-lg bg-background/60 p-4 text-center">
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">Your Code</div>
-              <div className="mt-2 font-display text-2xl font-bold text-gold">{data.user.referral_code}</div>
-            </div>
-            <a
-              href="/affiliate"
-              className="mt-6 block w-full rounded-md border border-gold/50 px-6 py-3 text-center font-semibold text-gold transition-colors hover:bg-gold/10"
-            >
-              View Affiliate Dashboard
-            </a>
+            <h2 className="font-display text-xl font-semibold">No Ubuntu member book</h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {overview?.error || "This login is not linked to a ua_users row. The Aureus share book is not shown here."}
+            </p>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <StatCard icon={Trophy} label="Corporate rank" value={overview?.currentRank || "SSA"} subtext={progress?.nextRank ? `Next ${progress.nextRank}` : "Top rank"} />
+              <StatCard icon={Wallet} label="Wallet available" value={`$${overview?.wallet?.available || "0.00"}`} subtext={`Credits $${overview?.wallet?.credits || "0.00"}`} />
+              <StatCard icon={Layers} label="Fraction underlying" value={overview?.fractions?.underlying || "0.00"} subtext={`${overview?.fractions?.quantity || 0} fraction lots`} />
+              <StatCard icon={Coins} label="Paid card orders" value={String(overview?.cards?.paidCount || 0)} subtext={`$${overview?.cards?.paidTotal || "0.00"}`} />
+            </div>
+
+            <div className="mt-8 grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2 rounded-2xl border border-border bg-card p-8">
+                <h2 className="font-display text-xl font-semibold">Rank progress</h2>
+                <div className="mt-6 space-y-4">
+                  <Row label="Team volume" value={`$${progress?.progress.teamVolume.have || "0.00"} / $${progress?.progress.teamVolume.need || "0.00"}`} met={progress?.progress.teamVolume.met} />
+                  <Row label="Team members" value={`${progress?.progress.teamMembers.have || 0} / ${progress?.progress.teamMembers.need || 0}`} met={progress?.progress.teamMembers.met} />
+                  <Row label="Qualified legs" value={`${progress?.progress.qualifiedLegs.have || 0} / ${progress?.progress.qualifiedLegs.need || 0}${progress?.progress.qualifiedLegs.requiredRank ? ` ${progress.progress.qualifiedLegs.requiredRank}` : ""}`} met={progress?.progress.qualifiedLegs.met} />
+                  <Row label="Personal QV" value={overview?.volume?.personalQv || "0.00"} />
+                  <Row label="Monthly team QV" value={overview?.volume?.monthlyTeamQv || "0.00"} />
+                </div>
+                <a
+                  href="/dashboard/invest"
+                  className="mt-6 inline-flex items-center gap-2 rounded-md border border-gold/50 px-6 py-3 font-semibold text-gold transition-colors hover:bg-gold/10"
+                >
+                  Fraction quote — checkout closed
+                </a>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-8">
+                <h2 className="font-display text-xl font-semibold">Wallet types</h2>
+                <div className="mt-6 space-y-3 text-sm">
+                  <Row label="Gap commission" value={`$${overview?.wallet?.byType?.GAP_COMMISSION || "0.00"}`} />
+                  <Row label="BLP" value={`$${overview?.wallet?.byType?.BLP || "0.00"}`} />
+                  <Row label="Reversals" value={`$${overview?.wallet?.reversals || "0.00"}`} />
+                </div>
+                <a
+                  href="/affiliate"
+                  className="mt-6 block w-full rounded-md border border-gold/50 px-6 py-3 text-center font-semibold text-gold transition-colors hover:bg-gold/10"
+                >
+                  Affiliate
+                </a>
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
 }
 
-function StatCard({ icon: Icon, label, value, subtext, trend }: {
+function Row({ label, value, met }: { label: string; value: string; met?: boolean }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/50 pb-3">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className={`font-display text-lg font-semibold ${met === true ? "text-gold" : ""}`}>{value}</span>
+    </div>
+  );
+}
+
+function StatCard({ icon: Icon, label, value, subtext }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
   subtext: string;
-  trend?: string;
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-6">
-      <div className="flex items-center justify-between">
-        <div className="grid h-12 w-12 place-items-center rounded-xl bg-gold/10 text-gold">
-          <Icon className="h-6 w-6" />
-        </div>
-        {trend && (
-          <span className="text-xs font-semibold text-emerald-400">{trend}</span>
-        )}
+      <div className="grid h-12 w-12 place-items-center rounded-xl bg-gold/10 text-gold">
+        <Icon className="h-6 w-6" />
       </div>
       <div className="mt-4">
         <div className="text-xs uppercase tracking-widest text-muted-foreground">{label}</div>

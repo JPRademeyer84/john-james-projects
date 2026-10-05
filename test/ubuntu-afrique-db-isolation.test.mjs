@@ -48,8 +48,12 @@ assert.match(backupEngine, /Do not reverse-migrate financial tables/, "rollback 
 
 const dashboard = readFileSync(new URL("../src/routes/dashboard/index.tsx", import.meta.url), "utf8")
 assert.match(dashboard, /current\.profile/, "dashboard uses server-loaded Aureus profile")
+assert.match(dashboard, /\/api\/member\/ledger/, "dashboard reads the Ubuntu member ledger API")
 assert.doesNotMatch(dashboard, /loadAureusMemberByAuthId/, "dashboard does not query Aureus from the browser")
 assert.doesNotMatch(dashboard, /project_id/, "dashboard does not query Aureus project_id")
+assert.doesNotMatch(dashboard, /ua_investments/, "dashboard does not use ua_investments as money truth")
+assert.doesNotMatch(dashboard, /ua_commissions/, "dashboard does not use ua_commissions as money truth")
+assert.doesNotMatch(dashboard, /1\.125/, "dashboard does not invent a portfolio valuation")
 
 const uaLogin = readFileSync(new URL("../src/routes/api/ua-login.ts", import.meta.url), "utf8")
 assert.match(uaLogin, /initiate-login/, "Ubuntu login proxies official Aureus bcrypt login")
