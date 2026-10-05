@@ -248,6 +248,17 @@ assert.match(recordPay, /checkoutEnabled: false/, "staging payment keeps checkou
 assert.doesNotMatch(recordPay, /confirmCommercePayment/, "record-payment does not settle Gap")
 assert.doesNotMatch(recordPay, /fgubaqoftdeefcakejwu/, "record-payment never targets Aureus")
 
+const pspWebhook = readFileSync(new URL("../src/routes/api/payments/webhook.ts", import.meta.url), "utf8")
+assert.match(pspWebhook, /persistUbuntuPspWebhook/, "PSP webhook writes Ubuntu payment events")
+assert.match(pspWebhook, /checkoutEnabled: false/, "PSP webhook keeps checkout closed")
+assert.doesNotMatch(pspWebhook, /confirmCommercePayment/, "PSP webhook does not settle Gap")
+assert.doesNotMatch(pspWebhook, /fgubaqoftdeefcakejwu/, "PSP webhook never targets Aureus")
+
+const pspEngine = readFileSync(new URL("../src/lib/ubuntuPsp.mjs", import.meta.url), "utf8")
+assert.match(pspEngine, /UA_PSP_STAGING/, "PSP engine uses Ubuntu staging provider")
+assert.match(pspEngine, /will not use Aureus payment credentials/, "PSP engine refuses Aureus credentials")
+assert.doesNotMatch(pspEngine, /NOWPAYMENTS/, "PSP engine does not import Aureus NowPayments")
+
 const adminCardOrders = readFileSync(new URL("../src/routes/api/admin/cards/orders.ts", import.meta.url), "utf8")
 assert.match(adminCardOrders, /UA_COMMERCE_CONFIRM_SECRET/, "admin card list is secret-gated")
 assert.match(adminCardOrders, /ua_card_orders/, "admin card list reads Ubuntu card orders")
