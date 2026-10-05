@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { summarizeLiability } from "./liabilityEngine.mjs"
+import { formatMoney2, parseMoney } from "./money.mjs"
 
 export async function persistLiabilityRemitted(
   ubuntu: SupabaseClient,
@@ -48,4 +49,64 @@ export async function loadLiabilityEntries(
     note: row.note,
   }))
   return { entries, summary: summarizeLiability(entries) }
+}
+
+export async function remitPaidFractionLiability(
+  ubuntu: SupabaseClient,
+  sourceTransactionId: string
+) {
+  const id = String(sourceTransactionId || "").trim()
+  if (!id) throw new Error("sourceTransactionId is required")
+
+  async function loadEntry(entryType: string) {
+    const { data, error } = await ubuntu
+      .from("ua_aureus_liability_ledger")
+      .select("id, amount")
+      .eq("source_transaction_id", id)
+      .eq("entry_type", entryType)
+      .maybeSingle()
+    if (error && !String(error.message || "").includes("does not exist")) {
+      throw new Error(error.message)
+    }
+    return data
+  }
+
+  if (await loadEntry("FRACTION_SALE_REVERSAL")) {
+    throw new Error("Refunded fraction sale cannot be remitted")
+  }
+
+  const sale = await loadEntry("FRACTION_SALE")
+  if (!sale) {
+    if (await loadEntry("FRACTION_RESERVE")) {
+      throw new Error("Reserved does not mean paid; remittance requires a FRACTION_SALE")
+    }
+    throw new Error("Paid fraction sale is required before remittance")
+  }
+
+  const { data: order, error: orderError } = await ubuntu
+    .from("ua_fraction_transactions")
+    .select("id, total_amount, transaction_status")
+    .eq("id", id)
+    .maybeSingle()
+  if (orderError) throw new Error(orderError.message)
+  if (!order) throw new Error("Ubuntu fraction transaction not found")
+  if (String(order.transaction_status || "") !== "PAID") {
+    throw new Error("Fraction must be PAID before remittance")
+  }
+
+  const amount = formatMoney2(parseMoney(String(order.total_amount)))
+  const remitted = await persistLiabilityRemitted(ubuntu, {
+    sourceTransactionId: id,
+    amount,
+    note: "Ubuntu remittance to Aureus; reserved does not mean paid",
+  })
+  const loaded = await loadLiabilityEntries(ubuntu, id)
+  return {
+    ...remitted,
+    sourceTransactionId: id,
+    amount,
+    reservedEqualsRemitted: false,
+    saleAmount: sale.amount == null ? null : String(sale.amount),
+    ...loaded,
+  }
 }

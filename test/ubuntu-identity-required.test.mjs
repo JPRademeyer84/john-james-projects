@@ -10,7 +10,7 @@ const pkg = JSON.parse(readFileSync(`${projectRoot}/package.json`, "utf8"))
 
 test("Wave F identity lock names MRSHAGNASTY and forbids origin push", () => {
   assert.match(identity, /No Post On Sunday/)
-  assert.match(identity, /mr\.shagnasty1990@gmail.com/)
+  assert.match(identity, /mr\.shagnasty1990@gmail\.com/)
   assert.match(identity, /MRSHAGNASTY/)
   assert.match(identity, /ubuntu-fork/)
   assert.match(identity, /Do not push/)
@@ -19,5 +19,5 @@ test("Wave F identity lock names MRSHAGNASTY and forbids origin push", () => {
   assert.doesNotMatch(identity, /vercel --prod/)
   assert.match(rule, /alwaysApply: true/)
   assert.match(rule, /ubuntu-fork/)
-  assert.equal(pkg.version, "0.1.39")
+  assert.equal(pkg.version, "0.1.40")
 })

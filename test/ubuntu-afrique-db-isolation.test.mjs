@@ -325,8 +325,17 @@ assert.match(liabilityEngine, /FRACTION_REMITTED/, "remitted is a distinct liabi
 assert.match(liabilityEngine, /outstanding/, "outstanding is original minus remitted")
 
 const persistLiability = readFileSync(new URL("../src/lib/persistLiability.server.ts", import.meta.url), "utf8")
-assert.match(persistLiability, /persistLiabilityRemitted/, "remit helper exists and is not an API")
+assert.match(persistLiability, /persistLiabilityRemitted/, "remit helper exists")
+assert.match(persistLiability, /remitPaidFractionLiability/, "secret-admin remit uses the paid-fraction helper")
+assert.match(persistLiability, /Reserved does not mean paid/, "remit refuses reserved-only rows")
 assert.doesNotMatch(persistLiability, /fgubaqoftdeefcakejwu/, "liability persist never targets Aureus")
+
+const remitApi = readFileSync(new URL("../src/routes/api/admin/liability/remit.ts", import.meta.url), "utf8")
+assert.match(remitApi, /UA_COMMERCE_CONFIRM_SECRET/, "liability remit is secret-gated")
+assert.match(remitApi, /remitPaidFractionLiability/, "liability remit API calls persistLiabilityRemitted")
+assert.match(remitApi, /taken from the paid Ubuntu fraction/, "liability remit rejects client amount")
+assert.match(remitApi, /checkoutEnabled: false/, "liability remit keeps checkout closed")
+assert.doesNotMatch(remitApi, /fgubaqoftdeefcakejwu/, "liability remit never targets Aureus")
 
 const schema11 = readFileSync(new URL("../supabase/ubuntu-only/0011_ua_liability_reserved_remitted.sql", import.meta.url), "utf8")
 assert.match(schema11, /NEVER run this on Aureus production/, "0011 refuses Aureus")
