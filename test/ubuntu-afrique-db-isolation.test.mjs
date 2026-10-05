@@ -57,13 +57,21 @@ assert.doesNotMatch(dashboard, /1\.125/, "dashboard does not invent a portfolio 
 
 const uaLogin = readFileSync(new URL("../src/routes/api/ua-login.ts", import.meta.url), "utf8")
 assert.match(uaLogin, /initiate-login/, "Ubuntu login proxies official Aureus bcrypt login")
+assert.match(uaLogin, /provisionUbuntuMemberFromAureus|loadAureusReadsAndRefreshMirror/, "login provisions the Ubuntu member and AA read-mirror")
 assert.doesNotMatch(uaLogin, /signInWithPassword/, "login proxy does not use Supabase Auth password grant")
 assert.doesNotMatch(uaLogin, /createClient/, "login admin lookup uses Aureus REST headers, not supabase-js JWT Bearer")
 
 const uaMe = readFileSync(new URL("../src/routes/api/ua-me.ts", import.meta.url), "utf8")
-assert.match(uaMe, /aureusRestMaybeSingle/, "ua-me loads Aureus profile through REST apikey headers")
+assert.match(uaMe, /loadAureusReadsAndRefreshMirror/, "ua-me refreshes the Ubuntu AA read-mirror")
+assert.match(uaMe, /loadAureusReadMirror/, "ua-me can show the stored Ubuntu AA read-mirror")
 assert.doesNotMatch(uaMe, /createClient/, "ua-me does not use supabase-js against sb_secret keys")
 assert.match(uaMe, /warning/, "ua-me keeps the session usable if Aureus profile fetch fails")
+
+const aaMirrorPersist = readFileSync(new URL("../src/lib/persistAureusReadMirror.server.ts", import.meta.url), "utf8")
+assert.match(aaMirrorPersist, /aureusRestMaybeSingle/, "AA mirror loads Aureus profile through REST apikey headers")
+assert.match(aaMirrorPersist, /from\("ua_users"\)/, "AA login writes Ubuntu ua_users")
+assert.match(aaMirrorPersist, /ua_aa_user_mirror/, "AA login writes Ubuntu ua_aa_user_mirror")
+assert.doesNotMatch(aaMirrorPersist, /fgubaqoftdeefcakejwu/, "AA mirror persist never targets Aureus")
 
 const aureusAdmin = readFileSync(new URL("../src/lib/aureusAdminRest.server.ts", import.meta.url), "utf8")
 assert.match(aureusAdmin, /charCodeAt/, "server rejects masked non-ASCII Aureus secrets")

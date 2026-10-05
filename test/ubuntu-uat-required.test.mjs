@@ -51,5 +51,5 @@ test("UAT runner is Ubuntu-only", {
   assert.doesNotMatch(source, /--with-data/)
   assert.doesNotMatch(source, /vercel --prod/)
   assert.doesNotMatch(source, /fgubaqoftdeefcakejwu/)
-  assert.equal(pkg.version, "0.1.46")
+  assert.equal(pkg.version, "0.1.47")
 })
