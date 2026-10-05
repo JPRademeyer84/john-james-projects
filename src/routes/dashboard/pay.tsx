@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
 
 export const Route = createFileRoute("/dashboard/pay")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -7,63 +7,83 @@ export const Route = createFileRoute("/dashboard/pay")({
     orderId: typeof search.orderId === "string" ? search.orderId : "",
   }),
   component: PayPage,
-});
+})
+
+function sessionToken() {
+  return typeof localStorage !== "undefined" ? localStorage.getItem("ua_session") || "" : ""
+}
 
 function authHeaders() {
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("ua_session") || ""}`,
-  };
+    Authorization: "Bearer " + sessionToken(),
+  }
 }
 
 function PayPage() {
-  const navigate = useNavigate();
-  const search = useSearch({ from: "/dashboard/pay" });
-  const [pending, setPending] = useState<Array<Record<string, any>>>([]);
-  const [ticket, setTicket] = useState<Record<string, any> | null>(null);
-  const [result, setResult] = useState<Record<string, any> | null>(null);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const navigate = useNavigate()
+  const search = useSearch({ from: "/dashboard/pay" })
+  const [pending, setPending] = useState<Array<Record<string, any>>>([])
+  const [ticket, setTicket] = useState<Record<string, any> | null>(null)
+  const [result, setResult] = useState<Record<string, any> | null>(null)
+  const [error, setError] = useState("")
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    void load();
-  }, [search.kind, search.orderId]);
+    if (!sessionToken()) {
+      navigate({ to: "/auth/login", search: { next: "/dashboard/pay" } })
+      return
+    }
+    void load()
+  }, [search.kind, search.orderId])
 
   async function load() {
-    setError("");
-    setTicket(null);
-    setResult(null);
+    setError("")
+    setTicket(null)
+    setResult(null)
     try {
       if (search.kind && search.orderId) {
         const res = await fetch("/api/payments/initiate", {
           method: "POST",
           headers: authHeaders(),
           body: JSON.stringify({ kind: search.kind, orderId: search.orderId }),
-        });
-        const json = await res.json();
-        if (!json.ok) {
-          setError(json.error || "Payment initiate failed");
-          return;
+        })
+        const json = await res.json()
+        if (res.status === 401) {
+          navigate({ to: "/auth/login", search: { next: "/dashboard/pay" } })
+          return
         }
-        setTicket(json);
-        return;
+        if (!json.ok) {
+          setError(json.error || "Payment initiate failed")
+          return
+        }
+        setTicket(json)
+        return
       }
-      const res = await fetch("/api/payments/pending", { headers: authHeaders() });
-      const json = await res.json();
+      const res = await fetch("/api/payments/pending", { headers: authHeaders() })
+      const json = await res.json()
+      if (res.status === 401) {
+        navigate({ to: "/auth/login", search: { next: "/dashboard/pay" } })
+        return
+      }
       if (!json.ok) {
-        setError(json.error || "Pending payments failed");
-        return;
+        setError(json.error || "Pending payments failed")
+        return
       }
-      setPending(json.orders || []);
+      setPending(json.orders || [])
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment gate failed");
+      setError(err instanceof Error ? err.message : "Payment gate failed")
     }
   }
 
   async function pay() {
-    if (!ticket) return;
-    setBusy(true);
-    setError("");
+    if (!ticket) return
+    if (!sessionToken()) {
+      navigate({ to: "/auth/login", search: { next: "/dashboard/pay" } })
+      return
+    }
+    setBusy(true)
+    setError("")
     try {
       const res = await fetch("/api/payments/complete", {
         method: "POST",
@@ -74,17 +94,21 @@ function PayPage() {
           paymentId: ticket.paymentId,
           signature: ticket.signature,
         }),
-      });
-      const json = await res.json();
-      if (!json.ok) {
-        setError(json.error || "Payment complete failed");
-        return;
+      })
+      const json = await res.json()
+      if (res.status === 401) {
+        navigate({ to: "/auth/login", search: { next: "/dashboard/pay" } })
+        return
       }
-      setResult(json.order);
+      if (!json.ok) {
+        setError(json.error || "Payment complete failed")
+        return
+      }
+      setResult(json.order)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment complete failed");
+      setError(err instanceof Error ? err.message : "Payment complete failed")
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
 
@@ -101,7 +125,7 @@ function PayPage() {
       <main className="mx-auto max-w-5xl px-6 py-12">
         <h1 className="font-display text-3xl font-bold">Pay CARD or FRACTION</h1>
         <p className="mt-2 text-muted-foreground">
-          Ubuntu staging PSP only. Amount comes from the Ubuntu book. Marketplace and NFT stay closed. No Aureus payment credentials.
+          Ubuntu staging PSP only. Sign in on this preview host first. Amount comes from the Ubuntu book. Marketplace and NFT stay closed.
         </p>
         {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
         {result && (
@@ -149,5 +173,5 @@ function PayPage() {
         )}
       </main>
     </div>
-  );
+  )
 }
