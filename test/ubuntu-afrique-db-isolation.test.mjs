@@ -108,6 +108,11 @@ assert.doesNotMatch(cardCheckoutPage, /\/api\/fractions\/order/, "member CARD pa
 assert.doesNotMatch(cardCheckoutPage, /\/api\/marketplace\/order/, "member CARD page does not open marketplace checkout")
 assert.doesNotMatch(cardCheckoutPage, /\/api\/nft\/order/, "member CARD page does not open NFT checkout")
 
+const publicCardUat = readFileSync(new URL("../deploy/ubuntu-public-card-uat.mjs", import.meta.url), "utf8")
+assert.match(publicCardUat, /PENDING_PAYMENT/, "public CARD UAT stays pending")
+assert.doesNotMatch(publicCardUat, /confirmCommercePayment/, "public CARD UAT does not settle Gap")
+assert.doesNotMatch(publicCardUat, /fgubaqoftdeefcakejwu/, "public CARD UAT never targets Aureus")
+
 const publicFractionOrder = readFileSync(new URL("../src/routes/api/fractions/order.ts", import.meta.url), "utf8")
 assert.match(publicFractionOrder, /Public checkout is not open/, "public fraction order path is closed")
 assert.match(publicFractionOrder, /status: 403/, "public fraction order stays 403")
