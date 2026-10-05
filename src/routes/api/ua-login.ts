@@ -67,14 +67,18 @@ export const Route = createFileRoute("/api/ua-login")({
         let provisionWarning = ""
         try {
           const ubuntu = getUbuntuServerClient()
-          if (ubuntu) {
+          if (!ubuntu) {
+            provisionWarning = "Ubuntu Afrique database is not configured"
+          } else {
             const refreshed = await loadAureusReadsAndRefreshMirror(ubuntu, {
               aureusUserId: Number(user.id),
               email: String(user.email),
               username: String(user.username || ""),
               authUserId: user.auth_user_id || null,
+              fullName: user.full_name || null,
             })
             ubuntuUserId = refreshed.member?.id || null
+            provisionWarning = refreshed.warning || ""
           }
         } catch (err) {
           provisionWarning = err instanceof Error ? err.message : "Ubuntu member provision failed"

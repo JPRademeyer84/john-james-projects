@@ -11,6 +11,12 @@ export function requireAureusUserId(value) {
   return id
 }
 
+export function safeAureusAuthUserId(value) {
+  const text = String(value || "").trim()
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)) return null
+  return text
+}
+
 export function normalizeAureusEmail(value) {
   const email = String(value || "").trim().toLowerCase()
   if (!email || !email.includes("@")) {
@@ -45,7 +51,7 @@ export function buildUbuntuMemberProvision(input) {
     aureus_user_id: requireAureusUserId(input?.aureusUserId),
     email: normalizeAureusEmail(input?.email),
     username: chooseUbuntuUsername(input),
-    aureus_auth_user_id: input?.authUserId ? String(input.authUserId) : null,
+    aureus_auth_user_id: safeAureusAuthUserId(input?.authUserId),
     identity_source: "aureus",
     pending_aureus_provision: false,
     is_active: input?.isActive !== false,
@@ -75,7 +81,7 @@ export function buildAureusReadMirrorRow(input) {
     is_admin: input?.isAdmin === true,
     is_active: input?.isActive !== false,
     role: input?.role == null ? null : String(input.role),
-    aureus_auth_user_id: input?.authUserId ? String(input.authUserId) : null,
+    aureus_auth_user_id: safeAureusAuthUserId(input?.authUserId),
     net_shares: money8(input?.netShares),
     invested: money8(input?.invested),
     commissions: money8(input?.commissions),

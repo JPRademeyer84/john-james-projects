@@ -18,6 +18,7 @@ test("AA login provisions Ubuntu member and read-mirror only", async () => {
     buildAureusReadMirrorRow,
     chooseUbuntuUsername,
     mirrorToUaMe,
+    safeAureusAuthUserId,
   } = await import(pathToFileURL(enginePath).href)
 
   const provision = buildUbuntuMemberProvision({
@@ -53,6 +54,8 @@ test("AA login provisions Ubuntu member and read-mirror only", async () => {
   assert.equal(shown.ledger.shares, 5)
   assert.equal(shown.mirrored, true)
 
+  assert.equal(safeAureusAuthUserId("nope"), null)
+  assert.equal(safeAureusAuthUserId("8d796fa1-eb57-4dd2-a8b5-677f71fcab4d"), "8d796fa1-eb57-4dd2-a8b5-677f71fcab4d")
   assert.throws(() => buildUbuntuMemberProvision({ aureusUserId: 0, email: "a@b.com" }), /aureusUserId/)
 })
 
@@ -86,5 +89,5 @@ test("login and ua-me write Ubuntu mirror, never Aureus", () => {
   assert.match(schema, /ua_aa_user_mirror/)
   assert.match(schema, /NEVER run on Aureus fgubaqoftdeefcakejwu/)
   assert.doesNotMatch(schema, /INSERT INTO public\.users/)
-  assert.equal(pkg.version, "0.1.47")
+  assert.equal(pkg.version, "0.1.48")
 })

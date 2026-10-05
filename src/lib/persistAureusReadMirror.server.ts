@@ -10,6 +10,7 @@ import {
   buildUbuntuMemberProvision,
   normalizeAureusEmail,
   requireAureusUserId,
+  safeAureusAuthUserId,
   summarizeAureusLedger,
 } from "./ubuntuAureusMirror.mjs"
 
@@ -40,6 +41,7 @@ export async function provisionUbuntuMemberFromAureus(
 ) {
   const aureusUserId = requireAureusUserId(input.aureusUserId)
   const email = normalizeAureusEmail(input.email)
+  const authUserId = safeAureusAuthUserId(input.authUserId)
 
   const byAureus = await ubuntu
     .from("ua_users")
@@ -64,10 +66,11 @@ export async function provisionUbuntuMemberFromAureus(
       .update({
         email,
         aureus_user_id: aureusUserId,
-        aureus_auth_user_id: input.authUserId || existing.aureus_auth_user_id || null,
+        aureus_auth_user_id: authUserId || existing.aureus_auth_user_id || null,
         identity_source: "aureus",
         pending_aureus_provision: false,
         is_active: input.isActive !== false,
+        updated_at: new Date().toISOString(),
       })
       .eq("id", existing.id)
       .select(MEMBER_SELECT)
@@ -80,7 +83,7 @@ export async function provisionUbuntuMemberFromAureus(
     aureusUserId,
     email,
     username: input.username,
-    authUserId: input.authUserId,
+    authUserId,
     isActive: input.isActive,
     takenUsernames: await loadTakenUsernames(ubuntu),
   })
@@ -88,6 +91,7 @@ export async function provisionUbuntuMemberFromAureus(
     .from("ua_users")
     .insert({
       ...provision,
+      aureus_auth_user_id: authUserId,
       auth_user_id: randomUUID(),
     })
     .select(MEMBER_SELECT)
@@ -119,33 +123,54 @@ export async function loadAureusReadMirror(ubuntu: SupabaseClient, aureusUserId:
 
 export async function loadAureusReadsAndRefreshMirror(
   ubuntu: SupabaseClient,
-  input: { aureusUserId: number | string; email: string; username?: string; authUserId?: string | null }
+  input: {
+    aureusUserId: number | string
+    email: string
+    username?: string
+    authUserId?: string | null
+    fullName?: string | null
+  }
 ) {
   const userId = requireAureusUserId(input.aureusUserId)
-  const [{ data: profile }, { data: balances }, { data: purchases }, { data: commissions }] = await Promise.all([
-    aureusRestMaybeSingle<Record<string, unknown>>(
-      `users?id=eq.${userId}&select=id,email,username,full_name,phone,country_of_residence,is_admin,is_active,role,created_at,auth_user_id`
-    ),
-    aureusRestMaybeSingle<{ net_shares?: number }>(`user_share_balances?user_id=eq.${userId}&select=net_shares`),
-    aureusRestSelect<Array<Record<string, unknown>>>(
-      `aureus_share_purchases?user_id=eq.${userId}&select=shares_purchased,total_amount,status,created_at,payment_method&order=created_at.desc&limit=25`
-    ),
-    aureusRestSelect<Array<Record<string, unknown>>>(
-      `multi_level_commissions?referrer_id=eq.${userId}&select=*&order=created_at.desc&limit=25`
-    ),
-  ])
-
   const member = await provisionUbuntuMemberFromAureus(ubuntu, {
     aureusUserId: userId,
-    email: String(profile?.email || input.email),
-    username: String(profile?.username || input.username || ""),
-    authUserId: profile?.auth_user_id ? String(profile.auth_user_id) : input.authUserId || null,
-    isActive: profile ? profile.is_active !== false : true,
+    email: input.email,
+    username: input.username,
+    authUserId: input.authUserId,
+    isActive: true,
   })
 
+  let profile: Record<string, unknown> | null = null
+  let purchases: Array<Record<string, unknown>> = []
+  let commissions: Array<Record<string, unknown>> = []
+  let balances: { net_shares?: number } | null = null
+  let readWarning = ""
+
+  try {
+    const reads = await Promise.all([
+      aureusRestMaybeSingle<Record<string, unknown>>(
+        `users?id=eq.${userId}&select=id,email,username,full_name,phone,country_of_residence,is_admin,is_active,role,created_at,auth_user_id`
+      ),
+      aureusRestMaybeSingle<{ net_shares?: number }>(`user_share_balances?user_id=eq.${userId}&select=net_shares`),
+      aureusRestSelect<Array<Record<string, unknown>>>(
+        `aureus_share_purchases?user_id=eq.${userId}&select=shares_purchased,total_amount,status,created_at,payment_method&order=created_at.desc&limit=25`
+      ),
+      aureusRestSelect<Array<Record<string, unknown>>>(
+        `multi_level_commissions?referrer_id=eq.${userId}&select=*&order=created_at.desc&limit=25`
+      ),
+    ])
+    profile = reads[0].data
+    balances = reads[1].data
+    purchases = reads[2].data || []
+    commissions = reads[3].data || []
+    if (!profile) readWarning = reads[0].error?.message || "Aureus profile not found"
+  } catch (err) {
+    readWarning = err instanceof Error ? err.message : "Aureus read failed"
+  }
+
   const ledger = summarizeAureusLedger({
-    purchases: purchases || [],
-    commissions: commissions || [],
+    purchases,
+    commissions,
     netShares: balances?.net_shares,
     commissionAmount,
   })
@@ -154,16 +179,24 @@ export async function loadAureusReadsAndRefreshMirror(
     aureusUserId: userId,
     ubuntuUserId: member.id,
     email: String(profile?.email || input.email),
-    username: String(profile?.username || member.username || ""),
-    fullName: profile?.full_name,
+    username: String(profile?.username || input.username || member.username || ""),
+    fullName: profile?.full_name || input.fullName,
     phone: profile?.phone,
     country: profile?.country_of_residence,
     isAdmin: profile?.is_admin === true,
     isActive: profile ? profile.is_active !== false : true,
     role: profile?.role,
-    authUserId: profile?.auth_user_id,
+    authUserId: profile?.auth_user_id || input.authUserId,
     ...ledger,
   })
 
-  return { member, profile, ledger, mirror, purchases: purchases || [], commissions: commissions || [] }
+  return {
+    member,
+    profile,
+    ledger,
+    mirror,
+    purchases,
+    commissions,
+    warning: readWarning,
+  }
 }
