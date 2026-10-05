@@ -12,6 +12,9 @@ export const PUBLIC_CHECKOUT_PATHS = [
   "/api/nft/listings",
 ]
 
+export const OPEN_PUBLIC_CHECKOUT_PATHS = ["/api/cards/order"]
+export const CLOSED_PUBLIC_CHECKOUT_PATHS = PUBLIC_CHECKOUT_PATHS.filter((path) => !OPEN_PUBLIC_CHECKOUT_PATHS.includes(path))
+
 export const REQUIRED_FLAGS_OFF = [
   "cards_enabled",
   "fractions_enabled",
@@ -35,15 +38,16 @@ export function planUbuntuUat(url) {
   return {
     target,
     checkoutEnabled: false,
+    cardCheckoutEnabled: true,
     nftMarketplaceEnabled: false,
     withDataFromProduction: false,
     writesFinancialRows: false,
     steps: [
       "Refuse Aureus production",
       "Take Ubuntu database dump",
-      "Confirm feature flags remain false",
-      "Confirm public checkout routes stay 403",
-      "Do not open checkout",
+      "Confirm marketplace and NFT flags remain false",
+      "CARD public checkout is named-open",
+      "Confirm fraction marketplace and NFT public order routes stay 403",
       "Do not enable NFT flags",
     ],
   }

@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/cards/quote")({
         const body = await request.json().catch(() => ({}))
         try {
           const quote = quoteCard(String(body.productType || ""), Number(body.quantity || 1))
-          return Response.json({ ok: true, quote, checkoutEnabled: false })
+          return Response.json({ ok: true, quote, checkoutEnabled: true, cardCheckoutEnabled: true })
         } catch (err) {
           return Response.json({ ok: false, error: err instanceof Error ? err.message : "Quote failed" }, { status: 400 })
         }

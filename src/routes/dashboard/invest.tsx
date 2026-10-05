@@ -60,11 +60,14 @@ function InvestPage() {
       <main className="mx-auto max-w-5xl px-6 py-12">
         <h1 className="font-display text-3xl font-bold">Cards and Fractions</h1>
         <p className="mt-2 text-muted-foreground">
-          Server quotes only. Payment checkout is not open. No wallet, inventory, or Gap Cover settlement in this screen.
+          Fraction checkout is not open. CARD checkout is on the Cards page. No wallet, inventory, or Gap Cover settlement in this screen.
         </p>
 
         <section className="mt-10">
           <h2 className="font-display text-xl font-semibold">Aureus Cards</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Quotes only on this page. Named CARD checkout is at <a href="/dashboard/cards" className="text-gold">/dashboard/cards</a>.
+          </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {cards.map((card) => (
               <div key={card.productType} className="rounded-2xl border border-border bg-card p-6">

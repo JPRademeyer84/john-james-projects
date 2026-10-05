@@ -19,5 +19,5 @@ test("Wave F identity lock names MRSHAGNASTY and forbids origin push", () => {
   assert.doesNotMatch(identity, /vercel --prod/)
   assert.match(rule, /alwaysApply: true/)
   assert.match(rule, /ubuntu-fork/)
-  assert.equal(pkg.version, "0.1.43")
+  assert.equal(pkg.version, "0.1.44")
 })

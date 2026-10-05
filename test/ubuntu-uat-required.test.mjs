@@ -8,13 +8,14 @@ const enginePath = `${projectRoot}/src/lib/ubuntuUat.mjs`
 const runnerPath = `${projectRoot}/deploy/ubuntu-uat.mjs`
 const pkg = JSON.parse(readFileSync(`${projectRoot}/package.json`, "utf8"))
 
-test("UAT gate 1 refuses Aureus and keeps checkout closed", {
+test("UAT gate 1 refuses Aureus and keeps non-CARD checkout closed", {
   skip: !existsSync(enginePath),
 }, async () => {
-  const { planUbuntuUat, assertUatFlags, assertClosedCheckoutResponse, PUBLIC_CHECKOUT_PATHS } = await import(pathToFileURL(enginePath).href)
+  const { planUbuntuUat, assertUatFlags, assertClosedCheckoutResponse, PUBLIC_CHECKOUT_PATHS, OPEN_PUBLIC_CHECKOUT_PATHS, CLOSED_PUBLIC_CHECKOUT_PATHS } = await import(pathToFileURL(enginePath).href)
   const ubuntu = "https://rbyipalrasawbjpsppgu.supabase.co"
   const plan = planUbuntuUat(ubuntu)
   assert.equal(plan.checkoutEnabled, false)
+  assert.equal(plan.cardCheckoutEnabled, true)
   assert.equal(plan.nftMarketplaceEnabled, false)
   assert.equal(plan.withDataFromProduction, false)
   assert.equal(plan.writesFinancialRows, false)
@@ -35,6 +36,9 @@ test("UAT gate 1 refuses Aureus and keeps checkout closed", {
   assert.doesNotThrow(() => assertClosedCheckoutResponse(403, { checkoutEnabled: false }))
   assert.throws(() => assertClosedCheckoutResponse(200, { checkoutEnabled: false }), /403/)
   assert.ok(PUBLIC_CHECKOUT_PATHS.includes("/api/cards/order"))
+  assert.ok(OPEN_PUBLIC_CHECKOUT_PATHS.includes("/api/cards/order"))
+  assert.ok(CLOSED_PUBLIC_CHECKOUT_PATHS.includes("/api/nft/order"))
+  assert.ok(CLOSED_PUBLIC_CHECKOUT_PATHS.includes("/api/fractions/order"))
   assert.ok(PUBLIC_CHECKOUT_PATHS.includes("/api/nft/order"))
 })
 
@@ -47,5 +51,5 @@ test("UAT runner is Ubuntu-only", {
   assert.doesNotMatch(source, /--with-data/)
   assert.doesNotMatch(source, /vercel --prod/)
   assert.doesNotMatch(source, /fgubaqoftdeefcakejwu/)
-  assert.equal(pkg.version, "0.1.43")
+  assert.equal(pkg.version, "0.1.44")
 })

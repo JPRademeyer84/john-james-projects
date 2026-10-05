@@ -129,6 +129,7 @@ function DashboardPage() {
           </div>
           <div className="flex items-center gap-6">
             <a href="/dashboard" className="text-sm font-medium text-gold">Dashboard</a>
+            <a href="/dashboard/cards" className="text-sm text-muted-foreground hover:text-foreground">Cards</a>
             <a href="/dashboard/invest" className="text-sm text-muted-foreground hover:text-foreground">Fractions</a>
             <a href="/marketplace" className="text-sm text-muted-foreground hover:text-foreground">Marketplace</a>
             <a href="/dashboard/nft" className="text-sm text-muted-foreground hover:text-foreground">NFT</a>

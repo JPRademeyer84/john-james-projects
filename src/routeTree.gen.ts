@@ -15,6 +15,7 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardInvestRouteImport } from './routes/dashboard/invest'
+import { Route as DashboardCardsRouteImport } from './routes/dashboard/cards'
 import { Route as DashboardNftRouteImport } from './routes/dashboard/nft'
 import { Route as MarketplaceIndexRouteImport } from './routes/marketplace/index'
 import { Route as MarketplaceDashboardRouteImport } from './routes/marketplace/dashboard'
@@ -51,6 +52,11 @@ const DashboardInvestRoute = DashboardInvestRouteImport.update({
   path: '/dashboard/invest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardCardsRoute = DashboardCardsRouteImport.update({
+  id: '/dashboard/cards',
+  path: '/dashboard/cards',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardNftRoute = DashboardNftRouteImport.update({
   id: '/dashboard/nft',
   path: '/dashboard/nft',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/dashboard/invest': typeof DashboardInvestRoute
+  '/dashboard/cards': typeof DashboardCardsRoute
   '/dashboard/nft': typeof DashboardNftRoute
   '/affiliate/': typeof AffiliateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/dashboard/invest': typeof DashboardInvestRoute
+  '/dashboard/cards': typeof DashboardCardsRoute
   '/dashboard/nft': typeof DashboardNftRoute
   '/affiliate': typeof AffiliateIndexRoute
   '/dashboard': typeof DashboardIndexRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/dashboard/invest': typeof DashboardInvestRoute
+  '/dashboard/cards': typeof DashboardCardsRoute
   '/dashboard/nft': typeof DashboardNftRoute
   '/affiliate/': typeof AffiliateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/dashboard/invest'
+    | '/dashboard/cards'
     | '/dashboard/nft'
     | '/affiliate/'
     | '/dashboard/'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/dashboard/invest'
+    | '/dashboard/cards'
     | '/dashboard/nft'
     | '/affiliate'
     | '/dashboard'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/dashboard/invest'
+    | '/dashboard/cards'
     | '/dashboard/nft'
     | '/affiliate/'
     | '/dashboard/'
@@ -164,6 +176,7 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   DashboardInvestRoute: typeof DashboardInvestRoute
+  DashboardCardsRoute: typeof DashboardCardsRoute
   DashboardNftRoute: typeof DashboardNftRoute
   AffiliateIndexRoute: typeof AffiliateIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -217,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardInvestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/cards': {
+      id: '/dashboard/cards'
+      path: '/dashboard/cards'
+      fullPath: '/dashboard/cards'
+      preLoaderRoute: typeof DashboardCardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/nft': {
       id: '/dashboard/nft'
       path: '/dashboard/nft'
@@ -260,6 +280,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   DashboardInvestRoute: DashboardInvestRoute,
+  DashboardCardsRoute: DashboardCardsRoute,
   DashboardNftRoute: DashboardNftRoute,
   AffiliateIndexRoute: AffiliateIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,

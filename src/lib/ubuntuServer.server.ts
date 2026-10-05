@@ -1,33 +1,33 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js"
-
-const AUREUS_PROD_REF = "fgubaqoftdeefcakejwu"
-
-function assertUbuntuWriteTarget(url: string) {
-  if (url.includes(AUREUS_PROD_REF)) {
-    throw new Error(
-      "Ubuntu Afrique write client is pointed at Aureus production. Refused. Use a separate Ubuntu Afrique Supabase project."
-    )
-  }
-}
-
-function ubuntuServerEnv() {
-  const url = String(process.env.UBUNTU_SUPABASE_URL || process.env.VITE_UBUNTU_SUPABASE_URL || "")
-  const key = String(
-    process.env.UBUNTU_SUPABASE_SERVICE_KEY ||
-      process.env.SUPABASE_SERVICE_KEY ||
-      process.env.VITE_UBUNTU_SUPABASE_ANON_KEY ||
-      ""
-  )
-  return { url, key, configured: Boolean(url && key) }
-}
-
-export function getUbuntuServerClient(): SupabaseClient | null {
-  const env = ubuntuServerEnv()
-  if (!env.configured) return null
-  assertUbuntuWriteTarget(env.url)
-  return createClient(env.url, env.key, { auth: { persistSession: false } })
-}
-
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+
+const AUREUS_PROD_REF = "fgubaqoftdeefcakejwu"
+
+function assertUbuntuWriteTarget(url: string) {
+  if (url.includes(AUREUS_PROD_REF)) {
+    throw new Error(
+      "Ubuntu Afrique write client is pointed at Aureus production. Refused. Use a separate Ubuntu Afrique Supabase project."
+    )
+  }
+}
+
+function ubuntuServerEnv() {
+  const url = String(process.env.UBUNTU_SUPABASE_URL || process.env.VITE_UBUNTU_SUPABASE_URL || "")
+  const key = String(
+    process.env.UBUNTU_SUPABASE_SERVICE_KEY ||
+      process.env.SUPABASE_SERVICE_KEY ||
+      process.env.VITE_UBUNTU_SUPABASE_ANON_KEY ||
+      ""
+  )
+  return { url, key, configured: Boolean(url && key) }
+}
+
+export function getUbuntuServerClient(): SupabaseClient | null {
+  const env = ubuntuServerEnv()
+  if (!env.configured) return null
+  assertUbuntuWriteTarget(env.url)
+  return createClient(env.url, env.key, { auth: { persistSession: false } })
+}
+
 export async function loadGapCoverMembers(ubuntu: SupabaseClient, sellerId: string) {
   const numericId = Number(sellerId)
   if (!Number.isInteger(numericId) || numericId <= 0) {
@@ -149,4 +149,16 @@ export async function loadUbuntuUser(ubuntu: SupabaseClient, userId: string | nu
     throw new Error("Ubuntu user is not active")
   }
   return { userId: String(data.id), isActive: true }
+}
+
+export async function loadUbuntuSponsorId(ubuntu: SupabaseClient, userId: string | number) {
+  const id = Number(userId)
+  if (!Number.isInteger(id) || id <= 0) return ""
+  const { data, error } = await ubuntu
+    .from("ua_sponsor_tree")
+    .select("sponsor_id")
+    .eq("user_id", id)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return data?.sponsor_id ? String(data.sponsor_id) : ""
 }
