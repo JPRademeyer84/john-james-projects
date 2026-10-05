@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
@@ -7,6 +7,7 @@ export const Route = createFileRoute("/dashboard/invest")({
 });
 
 function InvestPage() {
+  const navigate = useNavigate();
   const [cards, setCards] = useState<any[]>([]);
   const [fractionQty, setFractionQty] = useState(1);
   const [fractionQuote, setFractionQuote] = useState<any>(null);
@@ -66,6 +67,10 @@ function InvestPage() {
         return;
       }
       setResult(json.order);
+      navigate({
+        to: "/dashboard/pay",
+        search: { kind: "FRACTION", orderId: String(json.order.id) },
+      });
     } catch (err) {
       setFractionError(err instanceof Error ? err.message : "FRACTION checkout failed");
     } finally {
@@ -113,7 +118,7 @@ function InvestPage() {
         <section className="mt-10 rounded-2xl border border-gold/30 bg-gold/5 p-6">
           <h2 className="font-display text-xl font-semibold">$10 Fractions</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Live Ubuntu phase and remaining inventory. Historical ownership locks to the phase used at purchase. Creates PENDING_PAYMENT only. Payment records through the Ubuntu staging PSP. Confirm still requires a RECORDED event.
+            Live Ubuntu phase and remaining inventory. Historical ownership locks to the phase used at purchase. After pending, the Ubuntu member payment gate opens for this FRACTION.
           </p>
           <label className="mt-4 block text-sm font-medium">Quantity</label>
           <input

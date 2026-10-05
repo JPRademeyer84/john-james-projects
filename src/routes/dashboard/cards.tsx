@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 
 export const Route = createFileRoute("/dashboard/cards")({
@@ -6,6 +6,7 @@ export const Route = createFileRoute("/dashboard/cards")({
 })
 
 function CardCheckoutPage() {
+  const navigate = useNavigate()
   const [products, setProducts] = useState<Array<Record<string, any>>>([])
   const [quantity, setQuantity] = useState(1)
   const [error, setError] = useState("")
@@ -46,6 +47,10 @@ function CardCheckoutPage() {
         return
       }
       setResult(json.order)
+      navigate({
+        to: "/dashboard/pay",
+        search: { kind: "CARD", orderId: String(json.order.id) },
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : "CARD checkout failed")
     } finally {
@@ -66,10 +71,10 @@ function CardCheckoutPage() {
       <main className="mx-auto max-w-5xl px-6 py-12">
         <h1 className="font-display text-3xl font-bold">Public CARD checkout</h1>
         <p className="mt-2 text-muted-foreground">
-          Named open: CARD only. Price and sponsor come from the Ubuntu book. Fraction, marketplace, and NFT stay closed.
+          Named open: CARD only. After pending, the Ubuntu member payment gate opens. Marketplace and NFT stay closed.
         </p>
         <p className="mt-2 text-sm text-gold/80">
-          Creates PENDING_PAYMENT only. Payment records through the Ubuntu staging PSP. Confirm still requires a RECORDED event.
+          Creates PENDING_PAYMENT, then opens /dashboard/pay for Ubuntu staging PSP.
         </p>
         <label className="mt-8 block text-sm">
           Quantity
@@ -85,19 +90,19 @@ function CardCheckoutPage() {
         {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
         {result && (
           <p className="mt-4 text-sm text-gold">
-            Pending CARD {result.productId} {result.id} — ${result.total}
+            Pending CARD {result.productId} {result.id} @ ${result.total}
           </p>
         )}
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {products.map((product) => (
             <div key={product.productType} className="rounded-2xl border border-border bg-card p-6">
               <p className="text-xs uppercase tracking-widest text-gold">{product.productType}</p>
-              <h2 className="mt-2 font-display text-2xl font-bold">{product.name}</h2>
-              <p className="mt-4 text-sm text-muted-foreground">Retail ${product.unit?.retailPrice}</p>
+              <h2 className="mt-2 font-display text-xl font-bold">{product.name}</h2>
+              <p className="mt-3 text-sm text-muted-foreground">Retail {product.unit?.retailPrice}</p>
               <button
                 disabled={busy}
                 onClick={() => void buy(String(product.productType))}
-                className="mt-6 rounded-md border border-gold/50 px-6 py-3 font-semibold text-gold hover:bg-gold/10 disabled:opacity-50"
+                className="mt-6 rounded-md border border-gold/50 px-6 py-2 font-semibold text-gold hover:bg-gold/10 disabled:opacity-50"
               >
                 Place CARD order
               </button>

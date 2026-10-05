@@ -97,6 +97,7 @@ assert.match(schema4, /ua_fraction_transactions/, "fraction transactions table e
 const invest = readFileSync(new URL("../src/routes/dashboard/invest.tsx", import.meta.url), "utf8")
 assert.match(invest, /Named FRACTION checkout is open/, "invest names FRACTION checkout")
 assert.match(invest, /\/api\/fractions\/order/, "invest posts named FRACTION checkout")
+assert.match(invest, /\/dashboard\/pay/, "invest opens the member payment gate after pending")
 assert.doesNotMatch(invest, /aureusSharePrice:\s*"100.00"/, "invest quote does not send a client phase price")
 assert.doesNotMatch(invest, /\/api\/invest\/purchase/, "no fake invest purchase path")
 assert.doesNotMatch(invest, /\/api\/admin\/commerce\/confirm-payment/, "public invest page cannot confirm payment")
@@ -112,6 +113,7 @@ assert.doesNotMatch(publicCardOrder, /fgubaqoftdeefcakejwu/, "named CARD checkou
 
 const cardCheckoutPage = readFileSync(new URL("../src/routes/dashboard/cards.tsx", import.meta.url), "utf8")
 assert.match(cardCheckoutPage, /\/api\/cards\/order/, "member CARD page posts the named CARD checkout")
+assert.match(cardCheckoutPage, /\/dashboard\/pay/, "member CARD page opens the payment gate after pending")
 assert.doesNotMatch(cardCheckoutPage, /\/api\/fractions\/order/, "member CARD page does not open fraction checkout")
 assert.doesNotMatch(cardCheckoutPage, /\/api\/marketplace\/order/, "member CARD page does not open marketplace checkout")
 assert.doesNotMatch(cardCheckoutPage, /\/api\/nft\/order/, "member CARD page does not open NFT checkout")
