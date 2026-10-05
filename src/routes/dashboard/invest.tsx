@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard/invest")({
   component: InvestPage,
@@ -12,6 +11,8 @@ function InvestPage() {
   const [fractionQty, setFractionQty] = useState(1);
   const [fractionQuote, setFractionQuote] = useState<any>(null);
   const [fractionError, setFractionError] = useState("");
+  const [result, setResult] = useState<Record<string, any> | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     fetch("/api/cards/products")
@@ -46,6 +47,32 @@ function InvestPage() {
     };
   }, [fractionQty]);
 
+  async function placeFraction() {
+    setFractionError("");
+    setResult(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/fractions/order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("ua_session") || ""}`,
+        },
+        body: JSON.stringify({ quantity: fractionQty }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        setFractionError(json.error || "FRACTION checkout failed");
+        return;
+      }
+      setResult(json.order);
+    } catch (err) {
+      setFractionError(err instanceof Error ? err.message : "FRACTION checkout failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-xl">
@@ -60,7 +87,7 @@ function InvestPage() {
       <main className="mx-auto max-w-5xl px-6 py-12">
         <h1 className="font-display text-3xl font-bold">Cards and Fractions</h1>
         <p className="mt-2 text-muted-foreground">
-          Fraction checkout is not open. CARD checkout is on the Cards page. No wallet, inventory, or Gap Cover settlement in this screen.
+          Named FRACTION checkout is open on this page. CARD checkout stays on the Cards page. Marketplace and NFT stay closed.
         </p>
 
         <section className="mt-10">
@@ -86,17 +113,22 @@ function InvestPage() {
         <section className="mt-10 rounded-2xl border border-gold/30 bg-gold/5 p-6">
           <h2 className="font-display text-xl font-semibold">$10 Fractions</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Live Ubuntu phase and remaining inventory. Historical ownership will lock to the phase used at purchase. Checkout is not open.
+            Live Ubuntu phase and remaining inventory. Historical ownership locks to the phase used at purchase. Creates PENDING_PAYMENT only. Payment records through the Ubuntu staging PSP. Confirm still requires a RECORDED event.
           </p>
           <label className="mt-4 block text-sm font-medium">Quantity</label>
           <input
             type="number"
             min={1}
             value={fractionQty}
-            onChange={(e) => setFractionQty(Number(e.target.value))}
+            onChange={(e) => setFractionQty(Number(e.target.value || 1))}
             className="mt-2 w-40 rounded-lg border border-border bg-background px-4 py-3"
           />
           {fractionError && <p className="mt-3 text-sm text-red-400">{fractionError}</p>}
+          {result && (
+            <p className="mt-3 text-sm text-gold">
+              Pending FRACTION {result.productId} {result.id} @ ${result.total}
+            </p>
+          )}
           {fractionQuote && (
             <div className="mt-4 grid gap-2 text-sm">
               <p>Phase {fractionQuote.phase?.phase ?? fractionQuote.aureusPhase} at {fractionQuote.phase?.aureusSharePrice ?? fractionQuote.aureusSharePrice}</p>
@@ -109,6 +141,13 @@ function InvestPage() {
               <p className="font-semibold text-gold">Ubuntu Afrique gross {fractionQuote.ubuntuAfriqueGross}</p>
             </div>
           )}
+          <button
+            disabled={busy}
+            onClick={() => void placeFraction()}
+            className="mt-6 rounded-md border border-gold/50 px-6 py-2 font-semibold text-gold hover:bg-gold/10 disabled:opacity-50"
+          >
+            Place FRACTION order
+          </button>
         </section>
       </main>
     </div>

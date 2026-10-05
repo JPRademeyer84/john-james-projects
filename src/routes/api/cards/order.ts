@@ -24,7 +24,7 @@ function cardError(status: number, error: string) {
       error,
       checkoutEnabled: true,
       cardCheckoutEnabled: true,
-      fractionCheckoutEnabled: false,
+      fractionCheckoutEnabled: true,
       marketplaceEnabled: false,
       nftMarketplaceEnabled: false,
     },

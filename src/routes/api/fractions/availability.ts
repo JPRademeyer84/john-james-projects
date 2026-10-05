@@ -42,7 +42,10 @@ export const Route = createFileRoute("/api/fractions/availability")({
             availability: phaseAvailability(inventory.remainingUnderlying, phase.aureusSharePrice),
             inventory,
             phase,
-            checkoutEnabled: false,
+            checkoutEnabled: true,
+            fractionCheckoutEnabled: true,
+            marketplaceEnabled: false,
+            nftMarketplaceEnabled: false,
           })
         } catch (err) {
           return Response.json({

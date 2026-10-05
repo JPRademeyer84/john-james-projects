@@ -51,7 +51,10 @@ export const Route = createFileRoute("/api/fractions/quote")({
             quote,
             inventory,
             phase,
-            checkoutEnabled: false,
+            checkoutEnabled: true,
+            fractionCheckoutEnabled: true,
+            marketplaceEnabled: false,
+            nftMarketplaceEnabled: false,
           })
         } catch (err) {
           const message = err instanceof Error ? err.message : "Quote failed"

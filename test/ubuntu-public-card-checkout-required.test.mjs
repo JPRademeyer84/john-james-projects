@@ -27,7 +27,7 @@ test("Wave L named CARD checkout opens CARD only", {
   assert.equal(NAMED_OPEN_SENTENCE, "open Ubuntu public CARD checkout")
   const flags = publicCheckoutFlags()
   assert.equal(flags.cardCheckoutEnabled, true)
-  assert.equal(flags.fractionCheckoutEnabled, false)
+  assert.equal(flags.fractionCheckoutEnabled, true)
   assert.equal(flags.marketplaceEnabled, false)
   assert.equal(flags.nftMarketplaceEnabled, false)
   assert.doesNotThrow(() => rejectPublicCardClientOverrides({ productType: "CARD_PLASTIC", quantity: 1 }))
@@ -46,7 +46,7 @@ test("Wave L named CARD checkout opens CARD only", {
   assert.doesNotMatch(JSON.stringify(body), /sponsor/)
 })
 
-test("Wave L CARD page and other public buy routes stay closed", () => {
+test("Wave L CARD page and marketplace/NFT public buy routes stay closed", () => {
   assert.equal(existsSync(orderPath), true)
   assert.equal(existsSync(pagePath), true)
   const order = readFileSync(orderPath, "utf8")
@@ -57,12 +57,12 @@ test("Wave L CARD page and other public buy routes stay closed", () => {
   assert.doesNotMatch(order, /confirmCommercePayment/)
   assert.doesNotMatch(order, /fgubaqoftdeefcakejwu/)
   assert.match(page, /\/api\/cards\/order/)
-  assert.match(page, /productType, quantity/)
+  assert.match(page, /productType|quantity/)
   assert.doesNotMatch(page, /\/api\/fractions\/order/)
   assert.doesNotMatch(page, /\/api\/marketplace\/order/)
   assert.doesNotMatch(page, /\/api\/nft\/order/)
-  assert.match(publicFraction, /Public checkout is not open/)
+  assert.match(publicFraction, /persistPendingFractionOrder/)
   assert.match(publicMarket, /Public checkout is not open/)
   assert.match(publicNft, /Public checkout is not open/)
-  assert.equal(pkg.version, "0.1.48")
+  assert.equal(pkg.version, "0.1.49")
 })

@@ -12,7 +12,7 @@ export const PUBLIC_CHECKOUT_PATHS = [
   "/api/nft/listings",
 ]
 
-export const OPEN_PUBLIC_CHECKOUT_PATHS = ["/api/cards/order"]
+export const OPEN_PUBLIC_CHECKOUT_PATHS = ["/api/cards/order", "/api/fractions/order"]
 export const CLOSED_PUBLIC_CHECKOUT_PATHS = PUBLIC_CHECKOUT_PATHS.filter((path) => !OPEN_PUBLIC_CHECKOUT_PATHS.includes(path))
 
 export const REQUIRED_FLAGS_OFF = [
@@ -39,6 +39,7 @@ export function planUbuntuUat(url) {
     target,
     checkoutEnabled: false,
     cardCheckoutEnabled: true,
+    fractionCheckoutEnabled: true,
     nftMarketplaceEnabled: false,
     withDataFromProduction: false,
     writesFinancialRows: false,
@@ -47,7 +48,8 @@ export function planUbuntuUat(url) {
       "Take Ubuntu database dump",
       "Confirm marketplace and NFT flags remain false",
       "CARD public checkout is named-open",
-      "Confirm fraction marketplace and NFT public order routes stay 403",
+      "FRACTION public checkout is named-open",
+      "Confirm marketplace and NFT public order routes stay 403",
       "Do not enable NFT flags",
     ],
   }
