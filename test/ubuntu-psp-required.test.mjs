@@ -137,5 +137,5 @@ test("Wave J webhook stays Ubuntu-only and checkout stays closed", {
   assert.match(publicOrder, /status: 403/)
   assert.match(envExample, /UA_PSP_WEBHOOK_SECRET/)
   assert.doesNotMatch(envExample, /NOWPAYMENTS/)
-  assert.equal(pkg.version, "0.1.42")
+  assert.equal(pkg.version, "0.1.43")
 })

@@ -259,6 +259,25 @@ assert.match(pspEngine, /UA_PSP_STAGING/, "PSP engine uses Ubuntu staging provid
 assert.match(pspEngine, /will not use Aureus payment credentials/, "PSP engine refuses Aureus credentials")
 assert.doesNotMatch(pspEngine, /NOWPAYMENTS/, "PSP engine does not import Aureus NowPayments")
 
+const catalogEngine = readFileSync(new URL("../src/lib/ubuntuCatalog.mjs", import.meta.url), "utf8")
+assert.match(catalogEngine, /checkoutEnabled: false/, "catalog pages keep checkout closed")
+assert.match(catalogEngine, /comingSoon: true/, "catalog pages stay Coming Soon")
+assert.doesNotMatch(catalogEngine, /fgubaqoftdeefcakejwu/, "catalog helper never targets Aureus")
+
+const catalogPages = [
+  "../src/routes/marketplace/index.tsx",
+  "../src/routes/marketplace/company/$slug.tsx",
+  "../src/routes/marketplace/dashboard.tsx",
+  "../src/routes/nft/index.tsx",
+  "../src/routes/dashboard/nft.tsx",
+]
+for (const page of catalogPages) {
+  const source = readFileSync(new URL(page, import.meta.url), "utf8")
+  assert.doesNotMatch(source, /\/api\/marketplace\/order/, `${page} does not POST marketplace order`)
+  assert.doesNotMatch(source, /\/api\/nft\/order/, `${page} does not POST NFT order`)
+  assert.doesNotMatch(source, /fgubaqoftdeefcakejwu/, `${page} never targets Aureus`)
+}
+
 const adminCardOrders = readFileSync(new URL("../src/routes/api/admin/cards/orders.ts", import.meta.url), "utf8")
 assert.match(adminCardOrders, /UA_COMMERCE_CONFIRM_SECRET/, "admin card list is secret-gated")
 assert.match(adminCardOrders, /ua_card_orders/, "admin card list reads Ubuntu card orders")
