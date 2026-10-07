@@ -97,6 +97,31 @@ export const Route = createFileRoute("/api/payments/complete")({
           )
         } catch (err) {
           const message = err instanceof Error ? err.message : "Payment complete failed"
+          const raced = /duplicate|unique constraint|ua_qv_txn_source/i.test(message)
+          if (raced) {
+            const racedTable = kind === "CARD" ? "ua_card_orders" : "ua_fraction_transactions"
+            const { data: again } = await ubuntu
+              .from(racedTable)
+              .select("*")
+              .eq("id", orderId)
+              .maybeSingle()
+            const statusField = kind === "CARD" ? "order_status" : "transaction_status"
+            if (again && String(again[statusField] || "") === "PAID") {
+              return Response.json(
+                memberPaymentCompleteResponse({
+                  order: {
+                    id: orderId,
+                    kind,
+                    status: "PAID",
+                    total: String(kind === "CARD" ? again.total : again.total_amount || ""),
+                  },
+                  paymentId,
+                  settled: true,
+                  idempotent: true,
+                })
+              )
+            }
+          }
           const unauthorized = message.includes("Invalid session") || message.includes("signature") || message.includes("expired")
           const conflict = message.includes("already") || message.includes("not pending")
           return gateError(unauthorized ? 401 : conflict ? 409 : 400, message)

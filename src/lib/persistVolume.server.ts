@@ -38,7 +38,13 @@ export async function persistConfirmVolume(
     source_transaction_id: credit.sourceTransactionId,
     qv: credit.qv,
   })
-  if (qvError) throw new Error(qvError.message)
+  if (qvError) {
+    const text = String(qvError.message || "")
+    if (qvError.code === "23505" || text.toLowerCase().includes("duplicate") || text.includes("ua_qv_txn_source")) {
+      return { idempotent: true }
+    }
+    throw new Error(qvError.message)
+  }
 
   for (const userId of credit.teamUserIds) {
     const { data: current, error: readError } = await ubuntu

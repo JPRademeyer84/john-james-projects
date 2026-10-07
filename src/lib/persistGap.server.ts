@@ -35,9 +35,22 @@ export async function persistGapCoverResult(
       status: "posted",
       comp_plan_version: result.compPlanVersion,
     })
-    if (commissionError && !String(commissionError.message || "").includes("duplicate")) {
+    if (commissionError && !String(commissionError.message || "").includes("duplicate") && commissionError.code !== "23505") {
       throw new Error(commissionError.message)
     }
+
+    const { data: existingWallet, error: existingWalletError } = await ubuntu
+      .from("ua_wallet_ledger")
+      .select("id")
+      .eq("source_transaction_id", sourceTransactionId)
+      .eq("user_id", payment.recipientId)
+      .eq("entry_type", "GAP_COMMISSION")
+      .limit(1)
+      .maybeSingle()
+    if (existingWalletError && !String(existingWalletError.message || "").includes("does not exist")) {
+      throw new Error(existingWalletError.message)
+    }
+    if (existingWallet) continue
 
     const { error: walletError } = await ubuntu.from("ua_wallet_ledger").insert({
       user_id: payment.recipientId,
@@ -46,7 +59,7 @@ export async function persistGapCoverResult(
       source_transaction_id: sourceTransactionId,
       status: "posted",
     })
-    if (walletError && !String(walletError.message || "").includes("duplicate")) {
+    if (walletError && !String(walletError.message || "").includes("duplicate") && walletError.code !== "23505") {
       throw new Error(walletError.message)
     }
   }
