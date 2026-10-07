@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Ubuntu identity
 
-Commit, push, PR, and reply as `No Post On Sunday <mr.shagnasty1990@gmail.com>` / `MRSHAGNASTY` via `git -c`. Never `JPRademeyer84`. Do not write git config. Do not rewrite `a45b94f` or earlier JP commits.
+Commit, push, PR, review, comment, and merge as `No Post On Sunday <mr.shagnasty1990@gmail.com>` / `MRSHAGNASTY` via `git -c`. Never `JPRademeyer84`. Do not write git config. Do not rewrite `a45b94f` or earlier JP commits. `gh` stays `MRSHAGNASTY`.
 
 Push `ubuntu-fork` only. Do not push `origin`. Do not open checkout. Do not flip marketplace or nft flags unless the prompt names that exact flag.
 
