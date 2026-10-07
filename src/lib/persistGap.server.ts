@@ -45,6 +45,7 @@ export async function persistGapCoverResult(
       .eq("source_transaction_id", sourceTransactionId)
       .eq("user_id", payment.recipientId)
       .eq("entry_type", "GAP_COMMISSION")
+      .eq("status", "posted")
       .limit(1)
       .maybeSingle()
     if (existingWalletError && !String(existingWalletError.message || "").includes("does not exist")) {
