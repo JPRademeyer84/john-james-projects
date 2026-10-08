@@ -3,6 +3,10 @@
 import { compareMoney, formatMoney, formatMoney2, parseMoney } from "./money.mjs"
 
 const PAYMENT_TOTAL_MISMATCH = "Payment amount must match the Ubuntu price-version total"
+export const RECORDED_PAYMENT_REQUIRED = "Recorded payment event is required"
+export const PAYMENT_EVENT_MISMATCH = "Recorded payment event does not match the Ubuntu order"
+export const PAYMENT_CURRENCY_MISMATCH = "Payment currency must be USD"
+export const ALLOWED_PAYMENT_CURRENCY = "USD"
 
 function canonicalAmount(input) {
   const scaled = parseMoney(input)
@@ -28,7 +32,38 @@ export function assertPaymentMatchesOrder(order, paidAmount) {
   }
 }
 
-export function recordPaymentEvent({ orderId, kind, paymentId, amount, provider, order } = {}) {
+export function assertPaymentCurrency(currency) {
+  if (currency == null || String(currency).trim() === "") return ALLOWED_PAYMENT_CURRENCY
+  const value = String(currency).trim().toUpperCase()
+  if (value !== ALLOWED_PAYMENT_CURRENCY) {
+    throw new Error(PAYMENT_CURRENCY_MISMATCH)
+  }
+  return value
+}
+
+export function assertRecordedPaymentForConfirm({ event, order, paymentId, kind } = {}) {
+  if (!event) {
+    throw new Error(RECORDED_PAYMENT_REQUIRED)
+  }
+  const status = String(event.status || "").toUpperCase()
+  if (status !== "RECORDED" && status !== "CONFIRMED") {
+    throw new Error(RECORDED_PAYMENT_REQUIRED)
+  }
+  if (String(event.paymentId || "").trim() !== String(paymentId || "").trim()) {
+    throw new Error(PAYMENT_EVENT_MISMATCH)
+  }
+  if (!order || String(event.orderId || "").trim() !== String(order.id || "").trim()) {
+    throw new Error(PAYMENT_EVENT_MISMATCH)
+  }
+  if (String(event.kind || "").toUpperCase() !== String(kind || "").toUpperCase()) {
+    throw new Error(PAYMENT_EVENT_MISMATCH)
+  }
+  assertPaymentMatchesOrder(order, event.amount)
+  assertPaymentCurrency(event.currency)
+  return { ok: true, paymentId: String(paymentId), orderId: String(order.id) }
+}
+
+export function recordPaymentEvent({ orderId, kind, paymentId, amount, provider, order, currency } = {}) {
   const normalizedKind = String(kind || "").toUpperCase()
   if (normalizedKind !== "CARD" && normalizedKind !== "FRACTION") {
     throw new Error("kind must be CARD or FRACTION")
@@ -47,6 +82,7 @@ export function recordPaymentEvent({ orderId, kind, paymentId, amount, provider,
     kind: normalizedKind,
     paymentId: payId,
     amount: canonicalAmount(amount),
+    currency: assertPaymentCurrency(currency),
     provider: resolvedProvider,
   }
 }

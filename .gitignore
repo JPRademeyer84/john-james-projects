@@ -34,3 +34,5 @@ dist-ssr
 .vercel
 .env*
 !.env.example
+backups/
+uat-artifacts/

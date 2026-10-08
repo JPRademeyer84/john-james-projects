@@ -4,6 +4,9 @@ import { getUbuntuServerClient, loadGapCoverMembers, loadUbuntuUser } from "../.
 import { persistGapCoverResult } from "../../../../lib/persistGap.server"
 import { persistConfirmVolume } from "../../../../lib/persistVolume.server"
 import { persistFractionInventory } from "../../../../lib/persistInventory.server"
+import { loadPaymentEvent } from "../../../../lib/persistPayment.server"
+import { persistAdminAlert } from "../../../../lib/persistAlert.server"
+import { assertPaymentCurrency, assertRecordedPaymentForConfirm } from "../../../../lib/paymentAdapter.mjs"
 import { addMoney, formatMoney2, parseMoney } from "../../../../lib/money.mjs"
 
 function authorizeConfirm(request: Request, body: Record<string, unknown>) {
@@ -33,6 +36,22 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
         if (!paymentId || !orderId || (kind !== "CARD" && kind !== "FRACTION")) {
           return Response.json({ ok: false, error: "paymentId, orderId, and kind=CARD|FRACTION are required" }, { status: 400 })
         }
+        if (Object.prototype.hasOwnProperty.call(body, "amount") || Object.prototype.hasOwnProperty.call(body, "total")) {
+          return Response.json({
+            ok: false,
+            error: "Payment amount is taken from the recorded Ubuntu payment event, not the client",
+            checkoutEnabled: false,
+          }, { status: 400 })
+        }
+        try {
+          assertPaymentCurrency(body.currency)
+        } catch (err) {
+          return Response.json({
+            ok: false,
+            error: err instanceof Error ? err.message : "Payment currency must be USD",
+            checkoutEnabled: false,
+          }, { status: 400 })
+        }
 
         let ubuntu
         try {
@@ -53,11 +72,54 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
         if (!existing) {
           return Response.json({ ok: false, error: "Pending order not found" }, { status: 404 })
         }
+
+        const recordedTotal = kind === "CARD" ? existing.total : existing.total_amount
+        let recorded
+        try {
+          recorded = await loadPaymentEvent(ubuntu, paymentId)
+          assertRecordedPaymentForConfirm({
+            event: recorded
+              ? {
+                  paymentId: String(recorded.payment_id),
+                  orderId: String(recorded.order_id),
+                  kind: String(recorded.kind),
+                  amount: String(recorded.amount),
+                  status: String(recorded.status),
+                }
+              : null,
+            order: { id: orderId, total: recordedTotal == null ? "" : String(recordedTotal) },
+            paymentId,
+            kind,
+          })
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Recorded payment event is required"
+          const missing = message.includes("required")
+          await persistAdminAlert(ubuntu, {
+            type: "PAYMENT",
+            source: "/api/admin/commerce/confirm-payment",
+            reference: paymentId,
+            message,
+          }).catch(() => undefined)
+          return Response.json({
+            ok: false,
+            error: message,
+            checkoutEnabled: false,
+          }, { status: missing ? 409 : 400 })
+        }
+
         if (String(existing[statusField] || "") === "PAID") {
+          if (existing.payment_id && String(existing.payment_id) !== paymentId) {
+            return Response.json({
+              ok: false,
+              error: "Order already settled against a different payment",
+              checkoutEnabled: false,
+            }, { status: 409 })
+          }
           return Response.json({
             ok: true,
             order: { id: orderId, status: "PAID", paymentId: existing.payment_id || paymentId },
             idempotent: true,
+            checkoutEnabled: false,
           })
         }
 
@@ -124,7 +186,14 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
         try {
           confirmed = confirmCommercePayment({ order, paymentId, members, uplineUserIds })
         } catch (err) {
-          return Response.json({ ok: false, error: err instanceof Error ? err.message : "Confirm failed" }, { status: 400 })
+          const message = err instanceof Error ? err.message : "Confirm failed"
+          await persistAdminAlert(ubuntu, {
+            type: "PAYMENT",
+            source: "/api/admin/commerce/confirm-payment",
+            reference: paymentId,
+            message,
+          }).catch(() => undefined)
+          return Response.json({ ok: false, error: message }, { status: 400 })
         }
 
         if (ubuntu && confirmed.gapCover) {
@@ -171,7 +240,17 @@ export const Route = createFileRoute("/api/admin/commerce/confirm-payment")({
               await persistConfirmVolume(ubuntu, confirmed.volume)
             }
           } catch (err) {
-            return Response.json({ ok: false, error: err instanceof Error ? err.message : "Persist failed" }, { status: 500 })
+            const message = err instanceof Error ? err.message : "Persist failed"
+            const type = message.toLowerCase().includes("inventory") || message.toLowerCase().includes("underlying")
+              ? "INVENTORY"
+              : "COMMISSION"
+            await persistAdminAlert(ubuntu, {
+              type,
+              source: "/api/admin/commerce/confirm-payment",
+              reference: paymentId,
+              message,
+            }).catch(() => undefined)
+            return Response.json({ ok: false, error: message }, { status: 500 })
           }
         }
 

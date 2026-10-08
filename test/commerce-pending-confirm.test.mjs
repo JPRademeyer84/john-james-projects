@@ -17,7 +17,12 @@ import {
   reverseFractionOrder,
 } from "../src/lib/commerceOrders.mjs"
 import { currentBlpPeriod, sumBlpAccruals } from "../src/lib/volumeEngine.mjs"
-import { assertPaymentMatchesOrder, recordPaymentEvent } from "../src/lib/paymentAdapter.mjs"
+import {
+  assertPaymentCurrency,
+  assertPaymentMatchesOrder,
+  assertRecordedPaymentForConfirm,
+  recordPaymentEvent,
+} from "../src/lib/paymentAdapter.mjs"
 
 const chain = [
   { userId: "ssa", rank: "SSA" },
@@ -407,6 +412,61 @@ test("staging payment amount must match the Ubuntu price-version total", () => {
   })
   assert.equal(recorded.status, "RECORDED")
   assert.equal(recorded.provider, "UA_STAGING")
+  assert.equal(recorded.currency, "USD")
+})
+
+test("146 confirm requires a matching RECORDED payment event", () => {
+  const order = applyPriceVersionSnapshot(createPendingCardOrder({
+    orderId: "CARD-146",
+    userId: "9",
+    productType: "CARD_PLASTIC",
+    priceVersionId: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+  }), {
+    id: "ffffffff-ffff-ffff-ffff-ffffffffffff",
+    productId: "CARD_PLASTIC",
+    retailPrice: "100.00",
+    productCost: "55.00",
+    commissionableValue: "100.00",
+    qv: "100.00",
+    blpRate: "5.00",
+  })
+  const event = recordPaymentEvent({
+    orderId: order.id,
+    kind: "CARD",
+    paymentId: "PAY-146",
+    amount: "100.00",
+    order,
+  })
+  const ok = assertRecordedPaymentForConfirm({
+    event,
+    order,
+    paymentId: "PAY-146",
+    kind: "CARD",
+  })
+  assert.equal(ok.ok, true)
+  assert.throws(
+    () => assertRecordedPaymentForConfirm({ event: null, order, paymentId: "PAY-146", kind: "CARD" }),
+    /Recorded payment event is required/
+  )
+  assert.throws(
+    () => assertRecordedPaymentForConfirm({
+      event: { ...event, amount: "1.00" },
+      order,
+      paymentId: "PAY-146",
+      kind: "CARD",
+    }),
+    /price-version total/
+  )
+  assert.throws(
+    () => assertRecordedPaymentForConfirm({
+      event: { ...event, orderId: "OTHER" },
+      order,
+      paymentId: "PAY-146",
+      kind: "CARD",
+    }),
+    /does not match/
+  )
+  assert.throws(() => assertPaymentCurrency("EUR"), /USD/)
 })
 
 test("card fulfilment starts at PROCESSING after PAID and advances one step", () => {

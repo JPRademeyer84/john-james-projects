@@ -1,14 +1,18 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useState } from "react";
 import { auth } from "../../lib/supabase";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth/login")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    next: typeof search.next === "string" && search.next.startsWith("/dashboard") ? search.next : "/dashboard",
+  }),
   component: LoginPage,
 });
 
 function LoginPage() {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/auth/login" });
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,7 +25,11 @@ function LoginPage() {
     try {
       const data = await auth.signIn(formData.email, formData.password);
       localStorage.setItem("auth_token", data.session?.access_token || "");
-      navigate({ to: "/dashboard" });
+      if (search.next === "/dashboard/pay") {
+        navigate({ to: "/dashboard/pay" });
+      } else {
+        navigate({ to: "/dashboard" });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

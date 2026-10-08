@@ -15,6 +15,12 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardInvestRouteImport } from './routes/dashboard/invest'
+import { Route as DashboardCardsRouteImport } from './routes/dashboard/cards'
+import { Route as DashboardNftRouteImport } from './routes/dashboard/nft'
+import { Route as MarketplaceIndexRouteImport } from './routes/marketplace/index'
+import { Route as MarketplaceDashboardRouteImport } from './routes/marketplace/dashboard'
+import { Route as MarketplaceCompanySlugRouteImport } from './routes/marketplace/company/$slug'
+import { Route as NftIndexRouteImport } from './routes/nft/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,22 +52,64 @@ const DashboardInvestRoute = DashboardInvestRouteImport.update({
   path: '/dashboard/invest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardCardsRoute = DashboardCardsRouteImport.update({
+  id: '/dashboard/cards',
+  path: '/dashboard/cards',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardNftRoute = DashboardNftRouteImport.update({
+  id: '/dashboard/nft',
+  path: '/dashboard/nft',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketplaceIndexRoute = MarketplaceIndexRouteImport.update({
+  id: '/marketplace/',
+  path: '/marketplace/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketplaceDashboardRoute = MarketplaceDashboardRouteImport.update({
+  id: '/marketplace/dashboard',
+  path: '/marketplace/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketplaceCompanySlugRoute = MarketplaceCompanySlugRouteImport.update({
+  id: '/marketplace/company/$slug',
+  path: '/marketplace/company/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NftIndexRoute = NftIndexRouteImport.update({
+  id: '/nft/',
+  path: '/nft/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/dashboard/invest': typeof DashboardInvestRoute
+  '/dashboard/cards': typeof DashboardCardsRoute
+  '/dashboard/nft': typeof DashboardNftRoute
   '/affiliate/': typeof AffiliateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/marketplace/': typeof MarketplaceIndexRoute
+  '/marketplace/dashboard': typeof MarketplaceDashboardRoute
+  '/marketplace/company/$slug': typeof MarketplaceCompanySlugRoute
+  '/nft/': typeof NftIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/dashboard/invest': typeof DashboardInvestRoute
+  '/dashboard/cards': typeof DashboardCardsRoute
+  '/dashboard/nft': typeof DashboardNftRoute
   '/affiliate': typeof AffiliateIndexRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/marketplace': typeof MarketplaceIndexRoute
+  '/marketplace/dashboard': typeof MarketplaceDashboardRoute
+  '/marketplace/company/$slug': typeof MarketplaceCompanySlugRoute
+  '/nft': typeof NftIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,8 +117,14 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/dashboard/invest': typeof DashboardInvestRoute
+  '/dashboard/cards': typeof DashboardCardsRoute
+  '/dashboard/nft': typeof DashboardNftRoute
   '/affiliate/': typeof AffiliateIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/marketplace/': typeof MarketplaceIndexRoute
+  '/marketplace/dashboard': typeof MarketplaceDashboardRoute
+  '/marketplace/company/$slug': typeof MarketplaceCompanySlugRoute
+  '/nft/': typeof NftIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -79,24 +133,42 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/dashboard/invest'
+    | '/dashboard/cards'
+    | '/dashboard/nft'
     | '/affiliate/'
     | '/dashboard/'
+    | '/marketplace/'
+    | '/marketplace/dashboard'
+    | '/marketplace/company/$slug'
+    | '/nft/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth/login'
     | '/auth/register'
     | '/dashboard/invest'
+    | '/dashboard/cards'
+    | '/dashboard/nft'
     | '/affiliate'
     | '/dashboard'
+    | '/marketplace'
+    | '/marketplace/dashboard'
+    | '/marketplace/company/$slug'
+    | '/nft'
   id:
     | '__root__'
     | '/'
     | '/auth/login'
     | '/auth/register'
     | '/dashboard/invest'
+    | '/dashboard/cards'
+    | '/dashboard/nft'
     | '/affiliate/'
     | '/dashboard/'
+    | '/marketplace/'
+    | '/marketplace/dashboard'
+    | '/marketplace/company/$slug'
+    | '/nft/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -104,8 +176,14 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   DashboardInvestRoute: typeof DashboardInvestRoute
+  DashboardCardsRoute: typeof DashboardCardsRoute
+  DashboardNftRoute: typeof DashboardNftRoute
   AffiliateIndexRoute: typeof AffiliateIndexRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  MarketplaceIndexRoute: typeof MarketplaceIndexRoute
+  MarketplaceDashboardRoute: typeof MarketplaceDashboardRoute
+  MarketplaceCompanySlugRoute: typeof MarketplaceCompanySlugRoute
+  NftIndexRoute: typeof NftIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +230,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardInvestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/cards': {
+      id: '/dashboard/cards'
+      path: '/dashboard/cards'
+      fullPath: '/dashboard/cards'
+      preLoaderRoute: typeof DashboardCardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/nft': {
+      id: '/dashboard/nft'
+      path: '/dashboard/nft'
+      fullPath: '/dashboard/nft'
+      preLoaderRoute: typeof DashboardNftRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marketplace/': {
+      id: '/marketplace/'
+      path: '/marketplace'
+      fullPath: '/marketplace/'
+      preLoaderRoute: typeof MarketplaceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marketplace/dashboard': {
+      id: '/marketplace/dashboard'
+      path: '/marketplace/dashboard'
+      fullPath: '/marketplace/dashboard'
+      preLoaderRoute: typeof MarketplaceDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/marketplace/company/$slug': {
+      id: '/marketplace/company/$slug'
+      path: '/marketplace/company/$slug'
+      fullPath: '/marketplace/company/$slug'
+      preLoaderRoute: typeof MarketplaceCompanySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nft/': {
+      id: '/nft/'
+      path: '/nft'
+      fullPath: '/nft/'
+      preLoaderRoute: typeof NftIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -160,8 +280,14 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   DashboardInvestRoute: DashboardInvestRoute,
+  DashboardCardsRoute: DashboardCardsRoute,
+  DashboardNftRoute: DashboardNftRoute,
   AffiliateIndexRoute: AffiliateIndexRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  MarketplaceIndexRoute: MarketplaceIndexRoute,
+  MarketplaceDashboardRoute: MarketplaceDashboardRoute,
+  MarketplaceCompanySlugRoute: MarketplaceCompanySlugRoute,
+  NftIndexRoute: NftIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -6,9 +6,7 @@ export function getAureusServiceKey(): string {
   if (!key || key.includes("not-configured")) return ""
   for (let i = 0; i < key.length; i += 1) {
     if (key.charCodeAt(i) > 127) {
-      throw new Error(
-        "AUREUS_SERVICE_ROLE_KEY is masked or non-ASCII. Set a revealed sb_secret from `supabase projects api-keys --reveal`."
-      )
+      return ""
     }
   }
   return key

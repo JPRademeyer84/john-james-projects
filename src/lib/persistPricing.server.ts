@@ -61,3 +61,44 @@ export async function loadCurrentPriceVersion(ubuntu: SupabaseClient, productId:
   if (insertError) throw new Error(insertError.message)
   return mapPriceVersion(inserted)
 }
+
+export async function applyMissingOpenPriceVersions(ubuntu: SupabaseClient) {
+  const { data: products, error } = await ubuntu
+    .from("ua_products")
+    .select("id, retail_price, cost, company_payout, commissionable_value, qv, gap_schedule, blp_percentage")
+  if (error) throw new Error(error.message)
+
+  const seeded: string[] = []
+  const existing: string[] = []
+  for (const product of products || []) {
+    const { data: current, error: currentError } = await ubuntu
+      .from("ua_product_price_versions")
+      .select("id")
+      .eq("product_id", product.id)
+      .is("end_date", null)
+      .limit(1)
+      .maybeSingle()
+    if (currentError) throw new Error(currentError.message)
+    if (current) {
+      existing.push(String(product.id))
+      continue
+    }
+    if (product.retail_price == null || product.cost == null || product.commissionable_value == null || product.qv == null) {
+      throw new Error("Ubuntu product price is incomplete: " + product.id)
+    }
+    const { error: insertError } = await ubuntu.from("ua_product_price_versions").insert({
+      product_id: product.id,
+      retail_price: product.retail_price,
+      product_cost: product.cost,
+      company_payout: product.company_payout ?? 0,
+      commissionable_value: product.commissionable_value,
+      qv: product.qv,
+      gap_schedule: product.gap_schedule || "STANDARD_25",
+      blp_rate: product.blp_percentage ?? 5,
+    })
+    if (insertError) throw new Error(insertError.message)
+    seeded.push(String(product.id))
+  }
+
+  return { seeded, existing, checkoutEnabled: false as const }
+}

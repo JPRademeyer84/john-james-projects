@@ -15,7 +15,7 @@ function samePayment(existing: Record<string, unknown>, event: { orderId: string
   )
 }
 
-async function loadPaymentEvent(ubuntu: SupabaseClient, paymentId: string) {
+export async function loadPaymentEvent(ubuntu: SupabaseClient, paymentId: string) {
   const { data, error } = await ubuntu
     .from("ua_payment_events")
     .select("payment_id, order_id, kind, amount, provider, status")

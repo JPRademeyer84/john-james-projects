@@ -1,6 +1,10 @@
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 
+const identityLock = readFileSync(new URL("../IDENTITY.md", import.meta.url), "utf8")
+assert.match(identityLock, /No Post On Sunday/, "Wave F identity lock names the actor")
+assert.match(identityLock, /Do not push/, "Wave F identity lock forbids origin push")
+
 const supabase = readFileSync(new URL("../src/lib/supabase.ts", import.meta.url), "utf8")
 assert.match(supabase, /ubuntu\.from\(["']ua_users["']\)\.insert/, "signup writes Ubuntu ua_users only")
 assert.match(supabase, /pending_aureus_provision:\s*true/, "new Ubuntu users are queued for Aureus identity, not written live")
@@ -31,20 +35,43 @@ assert.match(runner, /will not connect to Aureus production/, "migration runner 
 assert.match(runner, /ubuntu-only/, "runner applies Ubuntu-only SQL")
 assert.doesNotMatch(runner, /001_create_projects_system/, "old Aureus project-table migrations are not run")
 
+const backupRunner = readFileSync(new URL("../deploy/ubuntu-backup-restore.mjs", import.meta.url), "utf8")
+assert.match(backupRunner, /planUbuntuBackup/, "backup runner plans Ubuntu backups")
+assert.match(backupRunner, /Refuses Aureus production/, "backup runner refuses Aureus")
+assert.doesNotMatch(backupRunner, /--with-data/, "backup runner does not clone production data")
+assert.doesNotMatch(backupRunner, /fgubaqoftdeefcakejwu/, "backup runner source does not name Aureus as a target")
+
+const backupEngine = readFileSync(new URL("../src/lib/backupRestore.mjs", import.meta.url), "utf8")
+assert.match(backupEngine, /assertUbuntuBackupTarget/, "backup engine asserts Ubuntu target")
+assert.match(backupEngine, /withDataFromProduction: false/, "backup engine never copies production data")
+assert.match(backupEngine, /Do not reverse-migrate financial tables/, "rollback restores a dump instead of reversing money tables")
+
 const dashboard = readFileSync(new URL("../src/routes/dashboard/index.tsx", import.meta.url), "utf8")
 assert.match(dashboard, /current\.profile/, "dashboard uses server-loaded Aureus profile")
+assert.match(dashboard, /\/api\/member\/ledger/, "dashboard reads the Ubuntu member ledger API")
 assert.doesNotMatch(dashboard, /loadAureusMemberByAuthId/, "dashboard does not query Aureus from the browser")
 assert.doesNotMatch(dashboard, /project_id/, "dashboard does not query Aureus project_id")
+assert.doesNotMatch(dashboard, /ua_investments/, "dashboard does not use ua_investments as money truth")
+assert.doesNotMatch(dashboard, /ua_commissions/, "dashboard does not use ua_commissions as money truth")
+assert.doesNotMatch(dashboard, /1\.125/, "dashboard does not invent a portfolio valuation")
 
 const uaLogin = readFileSync(new URL("../src/routes/api/ua-login.ts", import.meta.url), "utf8")
 assert.match(uaLogin, /initiate-login/, "Ubuntu login proxies official Aureus bcrypt login")
+assert.match(uaLogin, /provisionUbuntuMemberFromAureus|loadAureusReadsAndRefreshMirror/, "login provisions the Ubuntu member and AA read-mirror")
 assert.doesNotMatch(uaLogin, /signInWithPassword/, "login proxy does not use Supabase Auth password grant")
 assert.doesNotMatch(uaLogin, /createClient/, "login admin lookup uses Aureus REST headers, not supabase-js JWT Bearer")
 
 const uaMe = readFileSync(new URL("../src/routes/api/ua-me.ts", import.meta.url), "utf8")
-assert.match(uaMe, /aureusRestMaybeSingle/, "ua-me loads Aureus profile through REST apikey headers")
+assert.match(uaMe, /loadAureusReadsAndRefreshMirror/, "ua-me refreshes the Ubuntu AA read-mirror")
+assert.match(uaMe, /loadAureusReadMirror/, "ua-me can show the stored Ubuntu AA read-mirror")
 assert.doesNotMatch(uaMe, /createClient/, "ua-me does not use supabase-js against sb_secret keys")
 assert.match(uaMe, /warning/, "ua-me keeps the session usable if Aureus profile fetch fails")
+
+const aaMirrorPersist = readFileSync(new URL("../src/lib/persistAureusReadMirror.server.ts", import.meta.url), "utf8")
+assert.match(aaMirrorPersist, /aureusRestMaybeSingle/, "AA mirror loads Aureus profile through REST apikey headers")
+assert.match(aaMirrorPersist, /from\("ua_users"\)/, "AA login writes Ubuntu ua_users")
+assert.match(aaMirrorPersist, /ua_aa_user_mirror/, "AA login writes Ubuntu ua_aa_user_mirror")
+assert.doesNotMatch(aaMirrorPersist, /fgubaqoftdeefcakejwu/, "AA mirror persist never targets Aureus")
 
 const aureusAdmin = readFileSync(new URL("../src/lib/aureusAdminRest.server.ts", import.meta.url), "utf8")
 assert.match(aureusAdmin, /charCodeAt/, "server rejects masked non-ASCII Aureus secrets")
@@ -68,23 +95,41 @@ assert.match(schema4, /ua_card_orders/, "card orders table exists")
 assert.match(schema4, /ua_fraction_transactions/, "fraction transactions table exists")
 
 const invest = readFileSync(new URL("../src/routes/dashboard/invest.tsx", import.meta.url), "utf8")
-assert.match(invest, /checkout is not open/, "commerce checkout is not open")
+assert.match(invest, /Named FRACTION checkout is open/, "invest names FRACTION checkout")
+assert.match(invest, /\/api\/fractions\/order/, "invest posts named FRACTION checkout")
+assert.match(invest, /\/dashboard\/pay/, "invest opens the member payment gate after pending")
 assert.doesNotMatch(invest, /aureusSharePrice:\s*"100.00"/, "invest quote does not send a client phase price")
 assert.doesNotMatch(invest, /\/api\/invest\/purchase/, "no fake invest purchase path")
 assert.doesNotMatch(invest, /\/api\/admin\/commerce\/confirm-payment/, "public invest page cannot confirm payment")
 assert.doesNotMatch(invest, /\/api\/cards\/order/, "public invest page cannot create card orders")
-assert.doesNotMatch(invest, /\/api\/fractions\/order/, "public invest page cannot create fraction orders")
 assert.doesNotMatch(invest, /\/api\/admin\/commerce\/create-order/, "public invest page cannot create admin orders")
 
 const publicCardOrder = readFileSync(new URL("../src/routes/api/cards/order.ts", import.meta.url), "utf8")
-assert.match(publicCardOrder, /Public checkout is not open/, "public card order path is closed")
-assert.match(publicCardOrder, /status: 403/, "public card order stays 403")
-assert.doesNotMatch(publicCardOrder, /ua_card_orders/, "public card order does not insert Ubuntu rows")
+assert.match(publicCardOrder, /persistPendingCardOrder/, "named CARD checkout inserts Ubuntu pending rows")
+assert.match(publicCardOrder, /checkoutEnabled: true/, "named CARD checkout is open")
+assert.match(publicCardOrder, /rejectPublicCardClientOverrides/, "named CARD checkout rejects client book fields")
+assert.doesNotMatch(publicCardOrder, /confirmCommercePayment/, "named CARD checkout does not settle Gap")
+assert.doesNotMatch(publicCardOrder, /fgubaqoftdeefcakejwu/, "named CARD checkout never targets Aureus")
+
+const cardCheckoutPage = readFileSync(new URL("../src/routes/dashboard/cards.tsx", import.meta.url), "utf8")
+assert.match(cardCheckoutPage, /\/api\/cards\/order/, "member CARD page posts the named CARD checkout")
+assert.match(cardCheckoutPage, /\/dashboard\/pay/, "member CARD page opens the payment gate after pending")
+assert.doesNotMatch(cardCheckoutPage, /\/api\/fractions\/order/, "member CARD page does not open fraction checkout")
+assert.doesNotMatch(cardCheckoutPage, /\/api\/marketplace\/order/, "member CARD page does not open marketplace checkout")
+assert.doesNotMatch(cardCheckoutPage, /\/api\/nft\/order/, "member CARD page does not open NFT checkout")
+
+const publicCardUat = readFileSync(new URL("../deploy/ubuntu-public-card-uat.mjs", import.meta.url), "utf8")
+assert.match(publicCardUat, /PENDING_PAYMENT/, "public CARD UAT stays pending")
+assert.doesNotMatch(publicCardUat, /confirmCommercePayment/, "public CARD UAT does not settle Gap")
+assert.doesNotMatch(publicCardUat, /fgubaqoftdeefcakejwu/, "public CARD UAT never targets Aureus")
 
 const publicFractionOrder = readFileSync(new URL("../src/routes/api/fractions/order.ts", import.meta.url), "utf8")
-assert.match(publicFractionOrder, /Public checkout is not open/, "public fraction order path is closed")
-assert.match(publicFractionOrder, /status: 403/, "public fraction order stays 403")
-assert.doesNotMatch(publicFractionOrder, /ua_fraction_transactions/, "public fraction order does not insert Ubuntu rows")
+assert.match(publicFractionOrder, /persistPendingFractionOrder/, "named FRACTION checkout inserts Ubuntu pending rows")
+assert.match(publicFractionOrder, /persistFractionReserve/, "named FRACTION checkout reserves Ubuntu inventory")
+assert.match(publicFractionOrder, /checkoutEnabled: true/, "named FRACTION checkout is open")
+assert.match(publicFractionOrder, /rejectPublicFractionClientOverrides/, "named FRACTION checkout rejects client book fields")
+assert.doesNotMatch(publicFractionOrder, /confirmCommercePayment/, "named FRACTION checkout does not confirm")
+assert.doesNotMatch(publicFractionOrder, /fgubaqoftdeefcakejwu/, "named FRACTION checkout never targets Aureus")
 
 const createOrder = readFileSync(new URL("../src/routes/api/admin/commerce/create-order.ts", import.meta.url), "utf8")
 assert.match(createOrder, /UA_COMMERCE_CONFIRM_SECRET/, "admin order create is secret-gated")
@@ -108,6 +153,9 @@ assert.match(confirmPay, /UA_COMMERCE_CONFIRM_SECRET/, "payment confirm is secre
 assert.match(confirmPay, /Client-supplied rank chains are rejected/, "confirm API rejects client rank chains")
 assert.match(confirmPay, /processGapCover|confirmCommercePayment/, "confirm uses the shared Gap Cover path")
 assert.match(confirmPay, /persistConfirmVolume/, "confirm credits monthly QV and open BLP period")
+assert.match(confirmPay, /assertRecordedPaymentForConfirm/, "confirm requires a matching recorded payment event")
+assert.match(confirmPay, /Recorded payment event is required/, "confirm refuses when the payment event is missing")
+assert.match(confirmPay, /taken from the recorded Ubuntu payment event/, "confirm rejects a client amount")
 assert.match(confirmPay, /Pending order not found/, "confirm requires a real persisted pending row")
 assert.match(confirmPay, /orderFromCardRow|orderFromFractionRow/, "confirm rebuilds from the Ubuntu row, not client product fields")
 assert.match(confirmPay, /persistFractionInventory/, "fraction confirm decrements Ubuntu remaining inventory")
@@ -221,9 +269,40 @@ assert.match(confirmPay, /confirmCommercePayment/, "confirm-payment settles via 
 const recordPay = readFileSync(new URL("../src/routes/api/admin/commerce/record-payment.ts", import.meta.url), "utf8")
 assert.match(recordPay, /UA_COMMERCE_CONFIRM_SECRET/, "staging payment record is secret-gated")
 assert.match(recordPay, /persistPaymentEvent/, "staging payment writes ua_payment_events")
+assert.match(recordPay, /assertPaymentCurrency/, "staging payment validates currency")
 assert.match(recordPay, /checkoutEnabled: false/, "staging payment keeps checkout closed")
 assert.doesNotMatch(recordPay, /confirmCommercePayment/, "record-payment does not settle Gap")
 assert.doesNotMatch(recordPay, /fgubaqoftdeefcakejwu/, "record-payment never targets Aureus")
+
+const pspWebhook = readFileSync(new URL("../src/routes/api/payments/webhook.ts", import.meta.url), "utf8")
+assert.match(pspWebhook, /persistUbuntuPspWebhook/, "PSP webhook writes Ubuntu payment events")
+assert.match(pspWebhook, /checkoutEnabled: false/, "PSP webhook keeps checkout closed")
+assert.doesNotMatch(pspWebhook, /confirmCommercePayment/, "PSP webhook does not settle Gap")
+assert.doesNotMatch(pspWebhook, /fgubaqoftdeefcakejwu/, "PSP webhook never targets Aureus")
+
+const pspEngine = readFileSync(new URL("../src/lib/ubuntuPsp.mjs", import.meta.url), "utf8")
+assert.match(pspEngine, /UA_PSP_STAGING/, "PSP engine uses Ubuntu staging provider")
+assert.match(pspEngine, /will not use Aureus payment credentials/, "PSP engine refuses Aureus credentials")
+assert.doesNotMatch(pspEngine, /NOWPAYMENTS/, "PSP engine does not import Aureus NowPayments")
+
+const catalogEngine = readFileSync(new URL("../src/lib/ubuntuCatalog.mjs", import.meta.url), "utf8")
+assert.match(catalogEngine, /checkoutEnabled: false/, "catalog pages keep checkout closed")
+assert.match(catalogEngine, /comingSoon: true/, "catalog pages stay Coming Soon")
+assert.doesNotMatch(catalogEngine, /fgubaqoftdeefcakejwu/, "catalog helper never targets Aureus")
+
+const catalogPages = [
+  "../src/routes/marketplace/index.tsx",
+  "../src/routes/marketplace/company/$slug.tsx",
+  "../src/routes/marketplace/dashboard.tsx",
+  "../src/routes/nft/index.tsx",
+  "../src/routes/dashboard/nft.tsx",
+]
+for (const page of catalogPages) {
+  const source = readFileSync(new URL(page, import.meta.url), "utf8")
+  assert.doesNotMatch(source, /\/api\/marketplace\/order/, `${page} does not POST marketplace order`)
+  assert.doesNotMatch(source, /\/api\/nft\/order/, `${page} does not POST NFT order`)
+  assert.doesNotMatch(source, /fgubaqoftdeefcakejwu/, `${page} never targets Aureus`)
+}
 
 const adminCardOrders = readFileSync(new URL("../src/routes/api/admin/cards/orders.ts", import.meta.url), "utf8")
 assert.match(adminCardOrders, /UA_COMMERCE_CONFIRM_SECRET/, "admin card list is secret-gated")
@@ -302,8 +381,17 @@ assert.match(liabilityEngine, /FRACTION_REMITTED/, "remitted is a distinct liabi
 assert.match(liabilityEngine, /outstanding/, "outstanding is original minus remitted")
 
 const persistLiability = readFileSync(new URL("../src/lib/persistLiability.server.ts", import.meta.url), "utf8")
-assert.match(persistLiability, /persistLiabilityRemitted/, "remit helper exists and is not an API")
+assert.match(persistLiability, /persistLiabilityRemitted/, "remit helper exists")
+assert.match(persistLiability, /remitPaidFractionLiability/, "secret-admin remit uses the paid-fraction helper")
+assert.match(persistLiability, /Reserved does not mean paid/, "remit refuses reserved-only rows")
 assert.doesNotMatch(persistLiability, /fgubaqoftdeefcakejwu/, "liability persist never targets Aureus")
+
+const remitApi = readFileSync(new URL("../src/routes/api/admin/liability/remit.ts", import.meta.url), "utf8")
+assert.match(remitApi, /UA_COMMERCE_CONFIRM_SECRET/, "liability remit is secret-gated")
+assert.match(remitApi, /remitPaidFractionLiability/, "liability remit API calls persistLiabilityRemitted")
+assert.match(remitApi, /taken from the paid Ubuntu fraction/, "liability remit rejects client amount")
+assert.match(remitApi, /checkoutEnabled: false/, "liability remit keeps checkout closed")
+assert.doesNotMatch(remitApi, /fgubaqoftdeefcakejwu/, "liability remit never targets Aureus")
 
 const schema11 = readFileSync(new URL("../supabase/ubuntu-only/0011_ua_liability_reserved_remitted.sql", import.meta.url), "utf8")
 assert.match(schema11, /NEVER run this on Aureus production/, "0011 refuses Aureus")
@@ -416,6 +504,96 @@ const publicMarketOrder = readFileSync(new URL("../src/routes/api/marketplace/or
 assert.match(publicMarketOrder, /Public checkout is not open/, "public marketplace order stays closed")
 assert.match(publicMarketOrder, /status: 403/, "public marketplace order stays 403")
 assert.doesNotMatch(publicMarketOrder, /fgubaqoftdeefcakejwu/, "public marketplace order never targets Aureus")
+
+const schema16 = readFileSync(new URL("../supabase/ubuntu-only/0016_ua_nft_core.sql", import.meta.url), "utf8")
+assert.match(schema16, /NEVER run this on Aureus production/, "0016 refuses Aureus")
+assert.match(schema16, /ua_nft_assets/, "0016 adds Ubuntu NFT assets")
+assert.match(schema16, /ua_nft_listings/, "0016 adds Ubuntu NFT listings")
+assert.match(schema16, /ua_nft_sales/, "0016 adds Ubuntu NFT sales")
+assert.match(schema16, /ua_nft_ownership_history/, "0016 adds Ubuntu NFT ownership history")
+assert.match(schema16, /ua_nft_distribution_ledger/, "0016 adds Ubuntu NFT distribution ledger")
+assert.match(schema16, /nft_marketplace_enabled', 'false'/, "0016 keeps NFT marketplace flag off")
+
+const publicNftOrder = readFileSync(new URL("../src/routes/api/nft/order.ts", import.meta.url), "utf8")
+assert.match(publicNftOrder, /Public checkout is not open/, "public NFT order stays closed")
+assert.match(publicNftOrder, /status: 403/, "public NFT order stays 403")
+assert.match(publicNftOrder, /nftMarketplaceEnabled: false/, "public NFT order keeps production flag off")
+assert.doesNotMatch(publicNftOrder, /fgubaqoftdeefcakejwu/, "public NFT order never targets Aureus")
+
+const nftDistribute = readFileSync(new URL("../src/lib/nftDistribution.mjs", import.meta.url), "utf8")
+assert.match(nftDistribute, /processGapCover/, "NFT Network Gap uses shared Gap Cover")
+assert.match(nftDistribute, /STANDARD_25/, "NFT Network Gap scales STANDARD_25")
+assert.match(nftDistribute, /1_400_000|1400000/, "NFT production gate is 1,400,000 shares")
+assert.doesNotMatch(nftDistribute, /fgubaqoftdeefcakejwu/, "NFT distribution never targets Aureus")
+
+const adminNftSettle = readFileSync(new URL("../src/routes/api/admin/nft/settle.ts", import.meta.url), "utf8")
+assert.match(adminNftSettle, /UA_COMMERCE_CONFIRM_SECRET/, "admin NFT settle is secret-gated")
+assert.match(adminNftSettle, /Client-supplied rank chains are rejected/, "admin NFT settle rejects client members")
+assert.match(adminNftSettle, /checkoutEnabled: false/, "admin NFT settle keeps checkout closed")
+assert.doesNotMatch(adminNftSettle, /fgubaqoftdeefcakejwu/, "admin NFT settle never targets Aureus")
+
+const adminNftRecon = readFileSync(new URL("../src/routes/api/admin/nft/recon.ts", import.meta.url), "utf8")
+assert.match(adminNftRecon, /UA_COMMERCE_CONFIRM_SECRET/, "admin NFT recon is secret-gated")
+assert.match(adminNftRecon, /loadNftRecon/, "admin NFT recon reads Ubuntu NFT ledgers")
+assert.match(adminNftRecon, /checkoutEnabled: false/, "admin NFT recon keeps checkout closed")
+assert.doesNotMatch(adminNftRecon, /fgubaqoftdeefcakejwu/, "admin NFT recon never targets Aureus")
+
+const schema19 = readFileSync(new URL("../supabase/ubuntu-only/0019_ua_admin_alerts.sql", import.meta.url), "utf8")
+assert.match(schema19, /NEVER run this on Aureus production/, "0019 refuses Aureus")
+assert.match(schema19, /ua_admin_alerts/, "0019 adds Ubuntu admin alerts")
+
+const adminAlerts = readFileSync(new URL("../src/routes/api/admin/alerts.ts", import.meta.url), "utf8")
+assert.match(adminAlerts, /UA_COMMERCE_CONFIRM_SECRET/, "admin alerts are secret-gated")
+assert.match(adminAlerts, /checkoutEnabled: false/, "admin alerts keep checkout closed")
+assert.doesNotMatch(adminAlerts, /fgubaqoftdeefcakejwu/, "admin alerts never target Aureus")
+
+assert.match(confirmPay, /persistAdminAlert/, "confirm-payment records payment/commission/inventory alerts")
+assert.match(processApi, /persistAdminAlert/, "commission process records commission alerts")
+
+const schema18 = readFileSync(new URL("../supabase/ubuntu-only/0018_ua_marketplace_media.sql", import.meta.url), "utf8")
+assert.match(schema18, /NEVER run this on Aureus production/, "0018 refuses Aureus")
+assert.match(schema18, /ua_marketplace_media/, "0018 adds Ubuntu marketplace media")
+assert.doesNotMatch(schema18, /DELETE FROM/, "0018 archives by table status, not delete")
+
+const publicMarketMedia = readFileSync(new URL("../src/routes/api/marketplace/media.ts", import.meta.url), "utf8")
+assert.match(publicMarketMedia, /Public checkout is not open/, "public marketplace media stays closed")
+assert.match(publicMarketMedia, /status: 403/, "public marketplace media stays 403")
+
+const adminMarketMedia = readFileSync(new URL("../src/routes/api/admin/marketplace/media.ts", import.meta.url), "utf8")
+assert.match(adminMarketMedia, /UA_COMMERCE_CONFIRM_SECRET/, "admin marketplace media is secret-gated")
+assert.match(adminMarketMedia, /persistMarketplaceMediaArchive/, "admin marketplace media archives instead of deleting")
+assert.match(adminMarketMedia, /checkoutEnabled: false/, "admin marketplace media keeps checkout closed")
+assert.doesNotMatch(adminMarketMedia, /\.delete\(/, "admin marketplace media does not delete rows")
+assert.doesNotMatch(adminMarketMedia, /fgubaqoftdeefcakejwu/, "admin marketplace media never targets Aureus")
+
+const schema17 = readFileSync(new URL("../supabase/ubuntu-only/0017_ua_matrix148_indexes.sql", import.meta.url), "utf8")
+assert.match(schema17, /NEVER run this on Aureus production/, "0017 refuses Aureus")
+assert.match(schema17, /CREATE INDEX IF NOT EXISTS/, "0017 adds indexes only")
+assert.match(schema17, /ua_sponsor_tree_sponsor_id/, "0017 indexes sponsor_id")
+assert.match(schema17, /ua_payment_events_order_id/, "0017 indexes payment order_id")
+assert.match(schema17, /ua_nft_assets_current_owner/, "0017 indexes NFT current owner")
+assert.match(schema17, /ua_nft_listings_status/, "0017 indexes NFT listing status")
+assert.match(schema17, /ua_fraction_transactions_phase/, "0017 indexes phase id")
+assert.doesNotMatch(schema17, /CREATE TABLE/, "0017 does not create tables")
+assert.doesNotMatch(schema17, /INSERT INTO/, "0017 does not write rows")
+
+const schema20 = readFileSync(new URL("../supabase/ubuntu-only/0020_ua_kyc_admin_roles.sql", import.meta.url), "utf8")
+assert.match(schema20, /NEVER run this on Aureus production/, "0020 refuses Aureus")
+assert.match(schema20, /ua_kyc_profiles/, "0020 adds Ubuntu KYC profiles")
+assert.match(schema20, /ua_admin_roles/, "0020 adds Ubuntu admin roles")
+assert.match(schema20, /ua_admin_audit_log/, "0020 adds Ubuntu admin audit")
+assert.doesNotMatch(schema20, /fgubaqoftdeefcakejwu\.supabase/, "0020 never targets Aureus as a write URL")
+
+const kycEngine = readFileSync(new URL("../src/lib/ubuntuKyc.mjs", import.meta.url), "utf8")
+assert.match(kycEngine, /PENDING/, "KYC engine has pending")
+assert.match(kycEngine, /COMPLETED/, "KYC engine has completed")
+assert.match(kycEngine, /REJECTED/, "KYC engine has rejected")
+assert.match(kycEngine, /authorizeUbuntuAdmin/, "admin auth accepts role or secret")
+assert.doesNotMatch(kycEngine, /fgubaqoftdeefcakejwu/, "KYC engine never targets Aureus")
+
+const memberKyc = readFileSync(new URL("../src/routes/api/member/kyc.ts", import.meta.url), "utf8")
+assert.match(memberKyc, /checkoutEnabled: false/, "member KYC keeps checkout closed")
+assert.doesNotMatch(memberKyc, /fgubaqoftdeefcakejwu/, "member KYC never targets Aureus")
 
 const marketSettle = readFileSync(new URL("../src/lib/marketplaceSettlement.mjs", import.meta.url), "utf8")
 assert.match(marketSettle, /processGapCover/, "marketplace settlement uses shared Gap Cover")

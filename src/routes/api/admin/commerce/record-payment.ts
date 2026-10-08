@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { assertPaymentMatchesOrder, recordPaymentEvent } from "../../../../lib/paymentAdapter.mjs"
+import { assertPaymentCurrency, assertPaymentMatchesOrder, recordPaymentEvent } from "../../../../lib/paymentAdapter.mjs"
 import { persistPaymentEvent } from "../../../../lib/persistPayment.server"
 import { getUbuntuServerClient } from "../../../../lib/ubuntuServer.server"
 
@@ -95,6 +95,7 @@ export const Route = createFileRoute("/api/admin/commerce/record-payment")({
         const provider = body.provider == null ? undefined : String(body.provider)
 
         try {
+          assertPaymentCurrency((body as Record<string, unknown>).currency)
           if (supplied !== undefined) {
             assertPaymentMatchesOrder(order, supplied)
           }
@@ -104,6 +105,7 @@ export const Route = createFileRoute("/api/admin/commerce/record-payment")({
             paymentId,
             amount: order.total,
             provider,
+            currency: (body as Record<string, unknown>).currency,
             order,
           })
           await persistPaymentEvent(ubuntu, event)

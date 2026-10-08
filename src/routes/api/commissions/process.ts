@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { processGapCover } from "../../../lib/gapCover.mjs"
+import { persistAdminAlert } from "../../../lib/persistAlert.server"
 import { getUbuntuServerClient, loadGapCoverMembers, loadUbuntuUser } from "../../../lib/ubuntuServer.server"
 
 export const Route = createFileRoute("/api/commissions/process")({
@@ -75,8 +76,15 @@ export const Route = createFileRoute("/api/commissions/process")({
             scheduleId: commissionScheduleId,
           })
         } catch (err) {
+          const message = err instanceof Error ? err.message : "Gap Cover failed"
+          await persistAdminAlert(ubuntu, {
+            type: "COMMISSION",
+            source: "/api/commissions/process",
+            reference: transactionId,
+            message,
+          }).catch(() => undefined)
           return Response.json(
-            { ok: false, error: err instanceof Error ? err.message : "Gap Cover failed" },
+            { ok: false, error: message },
             { status: 400 }
           )
         }
@@ -98,6 +106,12 @@ export const Route = createFileRoute("/api/commissions/process")({
             comp_plan_version: result.compPlanVersion,
           })
           if (commissionError && !String(commissionError.message || "").includes("duplicate")) {
+            await persistAdminAlert(ubuntu, {
+              type: "COMMISSION",
+              source: "/api/commissions/process",
+              reference: transactionId,
+              message: commissionError.message,
+            }).catch(() => undefined)
             return Response.json({ ok: false, error: commissionError.message }, { status: 500 })
           }
 

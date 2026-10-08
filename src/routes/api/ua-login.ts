@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { signUaSession } from "../../lib/uaSession.server"
 import { aureusRestMaybeSingle } from "../../lib/aureusAdminRest.server"
+import { loadAureusReadsAndRefreshMirror } from "../../lib/persistAureusReadMirror.server"
+import { getUbuntuServerClient } from "../../lib/ubuntuServer.server"
 
 const AUREUS_LOGIN_URLS = [
   "https://www.aureus.africa/api/initiate-login",
@@ -61,10 +63,34 @@ export const Route = createFileRoute("/api/ua-login")({
         }
 
         const token = signUaSession({ aureusUserId: Number(user.id), email: String(user.email) })
+        let ubuntuUserId = null
+        let provisionWarning = ""
+        try {
+          const ubuntu = getUbuntuServerClient()
+          if (!ubuntu) {
+            provisionWarning = "Ubuntu Afrique database is not configured"
+          } else {
+            const refreshed = await loadAureusReadsAndRefreshMirror(ubuntu, {
+              aureusUserId: Number(user.id),
+              email: String(user.email),
+              username: String(user.username || ""),
+              authUserId: user.auth_user_id || null,
+              fullName: user.full_name || null,
+            })
+            ubuntuUserId = refreshed.member?.id || null
+            provisionWarning = refreshed.warning || ""
+          }
+        } catch (err) {
+          provisionWarning = err instanceof Error ? err.message : "Ubuntu member provision failed"
+        }
+
         return Response.json({
           ok: true,
           identitySource: "aureus",
           token,
+          ubuntuUserId,
+          provisioned: Boolean(ubuntuUserId),
+          warning: provisionWarning || undefined,
           user: {
             id: user.id,
             email: user.email,
